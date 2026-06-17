@@ -172,7 +172,7 @@ def main():
 
     html_table = df.to_html(index=False, escape=False)
 
-    now = datetime.now().strftime("%d/%m %H:%M")
+    now = datetime.now().strftime("%d/%m %H:%M:%S")
 
     html = f"""
     <html>
@@ -240,7 +240,7 @@ def main():
     </html>
     """
     # FORZAR CAMBIO PARA QUE GITHUB ACTUALICE
-    html += f"\n<!-- update {now} -->"
+    html += f"\n<!-- update {datetime.now().timestamp()} -->"
 
     with open(HTML_SALIDA, "w", encoding="utf-8") as f:
         f.write(html)
