@@ -13,43 +13,21 @@ RUTA_PARTICIPANTES = Path("data/participantes")
 SALIDA = "clasificacion.xlsx"
 HTML_SALIDA = "index.html"
 
-# PUNTOS
 P_GANADOR = 1
 P_DIFERENCIA = 3
 P_RESULTADO_EXACTO = 5
-P_POSICION_GRUPO = 3
-P_PICHICHI = 10
-P_BALON_ORO = 10
 
 # ======================
-# PARTIDOS
+# PUNTUACIÓN PARTIDOS
 # ======================
 def puntos_partido(real, apuesta):
 
     gl_r, gv_r = real["GOLES LOCAL"], real["GOLES VISITANTE"]
     gl_a, gv_a = apuesta["GOLES LOCAL"], apuesta["GOLES VISITANTE"]
 
-    local_r = str(real["LOCAL"]).strip().upper()
-    visitante_r = str(real["VISITANTE"]).strip().upper()
-
-    local_a = str(apuesta["LOCAL"]).strip().upper()
-    visitante_a = str(apuesta["VISITANTE"]).strip().upper()
-
     # ganador real
-    if gl_r > gv_r:
-        ganador_real = local_r
-    elif gv_r > gl_r:
-        ganador_real = visitante_r
-    else:
-        ganador_real = None
-
-    # ganador apuesta
-    if gl_a > gv_a:
-        ganador_apuesta = local_a
-    elif gv_a > gl_a:
-        ganador_apuesta = visitante_a
-    else:
-        ganador_apuesta = None
+    ganador_real = 1 if gl_r > gv_r else -1 if gv_r > gl_r else 0
+    ganador_apuesta = 1 if gl_a > gv_a else -1 if gv_a > gl_a else 0
 
     if ganador_real != ganador_apuesta:
         return 0
@@ -92,12 +70,19 @@ def puntuar_partidos(maestro, jugador):
     return total, g, d, e
 
 
+def contar_partidos_jugados(maestro):
+    partidos = maestro[(maestro["ID"] >= 1) & (maestro["ID"] <= 104)]
+    return int((partidos["JUGADO"] == 1).sum())
+
+
 # ======================
 # MAIN
 # ======================
 def main():
 
     maestro = pd.read_excel(RUTA_MAESTRO, sheet_name="Datos")
+
+    partidos_jugados = contar_partidos_jugados(maestro)
 
     ranking = []
 
@@ -119,65 +104,135 @@ def main():
             "Totales": puntos
         })
 
+    # ======================
+    # CLASIFICACIÓN
+    # ======================
     df = pd.DataFrame(ranking).sort_values("Totales", ascending=False).reset_index(drop=True)
     df.insert(0, "Posición", df.index + 1)
+
+    # ======================
+    # MOVIMIENTO
+    # ======================
+    clasificacion_anterior = None
+
+    if os.path.exists(SALIDA):
+        try:
+            clasificacion_anterior = pd.read_excel(SALIDA)
+        except:
+            pass
+
+    if clasificacion_anterior is not None:
+
+        posiciones_antiguas = {
+            fila["Participante"]: fila["Posición"]
+            for _, fila in clasificacion_anterior.iterrows()
+        }
+
+        movimientos = []
+
+        for _, fila in df.iterrows():
+
+            jugador = fila["Participante"]
+            posicion_actual = fila["Posición"]
+
+            if jugador not in posiciones_antiguas:
+                movimientos.append("🆕")
+                continue
+
+            posicion_anterior = posiciones_antiguas[jugador]
+
+            diff = posicion_anterior - posicion_actual
+
+            if diff > 0:
+                movimientos.append(f"↑{diff}")
+            elif diff < 0:
+                movimientos.append(f"↓{abs(diff)}")
+            else:
+                movimientos.append("=")
+
+        df.insert(1, "Mov", movimientos)
 
     # ======================
     # GUARDAR EXCEL
     # ======================
     df.to_excel(SALIDA, index=False)
 
-    # colorear movimientos opcional
-    wb = load_workbook(SALIDA)
-    ws = wb.active
-
-    verde = PatternFill("solid", fgColor="C6EFCE")
-
-    for fila in range(2, ws.max_row + 1):
-        ws.cell(row=fila, column=5).fill = verde
-
-    wb.save(SALIDA)
-
     # ======================
-    # HTML (WEB)
+    # HTML
     # ======================
+    def formato_mov(val):
+        if "↑" in str(val):
+            return f'<span style="color:#00ff00">{val}</span>'
+        elif "↓" in str(val):
+            return f'<span style="color:#ff4d4d">{val}</span>'
+        return val
+
+    if "Mov" in df.columns:
+        df["Mov"] = df["Mov"].apply(formato_mov)
+
+    html_table = df.to_html(index=False, escape=False)
 
     now = datetime.now().strftime("%d/%m %H:%M")
-
-    html_table = df.to_html(index=False)
 
     html = f"""
     <html>
     <head>
-        <meta charset="UTF-8">
-        <title>Porra Mundial</title>
-        <style>
-            body {{
-                background: #111;
-                color: white;
-                font-family: Arial;
-                text-align: center;
-            }}
-            table {{
-                margin: auto;
-                border-collapse: collapse;
-            }}
-            th, td {{
-                padding: 10px;
-                border-bottom: 1px solid #444;
-            }}
-            th {{
-                background: #222;
-            }}
-            tr:nth-child(2) {{ background: gold; color: black; }}
-            tr:nth-child(3) {{ background: silver; color: black; }}
-            tr:nth-child(4) {{ background: #cd7f32; color: black; }}
-        </style>
-    </head>
-    <body>
+    <meta charset="UTF-8">
+    <title>Porra Mundial</title>
 
-    <h1>🏆 Clasificación Porra</h1>
+    <style>
+    body {{
+        background: #111;
+        color: white;
+        font-family: Arial;
+        text-align: center;
+    }}
+
+    table {{
+        margin: auto;
+        border-collapse: collapse;
+    }}
+
+    th, td {{
+        padding: 10px;
+        border-bottom: 1px solid #444;
+    }}
+
+    th {{
+        background: #222;
+    }}
+
+    tr:nth-child(even) {{
+        background: #1a1a1a;
+    }}
+
+    tr:nth-child(2) {{
+        background: gold;
+        color: black;
+    }}
+
+    tr:nth-child(3) {{
+        background: silver;
+        color: black;
+    }}
+
+    tr:nth-child(4) {{
+        background: #cd7f32;
+        color: black;
+    }}
+
+    td:last-child {{
+        font-weight: bold;
+        color: #00ffcc;
+    }}
+
+    </style>
+    </head>
+
+    <body>
+    <h1>🏆 Clasificación Porra Mundial</h1>
     <p>Actualizado: {now}</p>
+    <p>Partidos jugados: {partidos_jugados} / 104</p>
 
     {html_table}
 
@@ -193,11 +248,10 @@ def main():
     # ======================
     # AUTO PUSH
     # ======================
-
     print("🚀 Subiendo a GitHub...")
 
     os.system("git add .")
-    os.system('git commit -m "update automatico"')
+    os.system(f'git commit -m "update {now}"')
     os.system("git push")
 
     print("✅ Todo actualizado")
