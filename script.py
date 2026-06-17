@@ -208,32 +208,32 @@ def main():
         background: #1a1a1a;
     }}
 
-    # 🔥 TOP 3 (ARREGLADO DE VERDAD)
-    
-    tbody tr:first-child {{
-        background: gold;
-        color: black;
-        font-weight: bold;
+    /* TOP 3 ROBUSTO */
+    tbody tr:nth-of-type(1) {{
+    background: gold;
+    color: black;
+    font-weight: bold;
     }}
 
-
-    tbody tr:nth-child(2) {{
+    tbody tr:nth-of-type(2) {{
         background: silver;
         color: black;
         font-weight: bold;
     }}
 
-    tbody tr:nth-child(3) {{
+    tbody tr:nth-of-type(3) {{
         background: #cd7f32;
         color: black;
         font-weight: bold;
     }}
 
     # ✅ Totales SOLO fuera del TOP
-    tbody tr:nth-child(n+4) td:last-child {{
+    
+    tbody tr:nth-of-type(n+4) td:last-child {{
         font-weight: bold;
         color: #00ffcc;
     }}
+
 
     </style>
 
