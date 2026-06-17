@@ -239,6 +239,8 @@ def main():
     </body>
     </html>
     """
+    # FORZAR CAMBIO PARA QUE GITHUB ACTUALICE
+    html += f"\n<!-- update {now} -->"
 
     with open(HTML_SALIDA, "w", encoding="utf-8") as f:
         f.write(html)
