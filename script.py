@@ -164,6 +164,8 @@ def main():
 
     now = datetime.now().strftime("%d/%m %H:%M:%S")
 
+    html_table = df.to_html(index=False, escape=False)
+
     html = f"""
     <html>
     <head>
@@ -184,10 +186,13 @@ def main():
         text-align: center;
     }}
 
-    table {{
-        margin: auto;
-        border-collapse: collapse;
+    h1 {{
         margin-top: 20px;
+    }}
+
+    table {{
+        margin: 20px auto;
+        border-collapse: collapse;
     }}
 
     th, td {{
@@ -199,33 +204,37 @@ def main():
         background: #222;
     }}
 
-    tr:nth-child(even) {{
+    tbody tr:nth-child(even) {{
         background: #1a1a1a;
     }}
 
-    /* TOP 3 */
-    tr:nth-child(2) {{ background: gold; color: black; font-weight: bold; }}
-    tr:nth-child(3) {{ background: silver; color: black; font-weight: bold; }}
-    tr:nth-child(4) {{ background: #cd7f32; color: black; font-weight: bold; }}
+    # 🔥 TOP 3 (ARREGLADO DE VERDAD)
+    tbody tr:nth-child(1) {{
+        background: gold;
+        color: black;
+        font-weight: bold;
+    }}
 
-        
-    
-    /* ✅ Totales todas las filas */
-    td:last-child {{
+    tbody tr:nth-child(2) {{
+        background: silver;
+        color: black;
+        font-weight: bold;
+    }}
+
+    tbody tr:nth-child(3) {{
+        background: #cd7f32;
+        color: black;
+        font-weight: bold;
+    }}
+
+    # ✅ Totales SOLO fuera del TOP
+    tbody tr:nth-child(n+4) td:last-child {{
         font-weight: bold;
         color: #00ffcc;
     }}
 
-    /* ✅ SOBRESCRIBIR EN TOP 3 (más prioridad) */
-    tr:nth-child(2) td:last-child,
-    tr:nth-child(3) td:last-child,
-    tr:nth-child(4) td:last-child {{
-        color: black !important;
-    }}
-
-
-
     </style>
+
     </head>
 
     <body>
@@ -241,7 +250,7 @@ def main():
     </html>
     """
 
-    # FORZAR CAMBIO
+    # 🔥 FORZAR ACTUALIZACIÓN SIEMPRE
     html += f"\n<!-- update {datetime.now().timestamp()} -->"
 
     with open(HTML_SALIDA, "w", encoding="utf-8") as f:
