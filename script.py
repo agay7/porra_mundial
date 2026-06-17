@@ -209,11 +209,13 @@ def main():
     }}
 
     # 🔥 TOP 3 (ARREGLADO DE VERDAD)
-    tbody tr:nth-child(1) {{
+    
+    tbody tr:first-child {{
         background: gold;
         color: black;
         font-weight: bold;
     }}
+
 
     tbody tr:nth-child(2) {{
         background: silver;
