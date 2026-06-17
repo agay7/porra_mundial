@@ -153,19 +153,43 @@ players.forEach((p, i) => {
     const py = y(pts);
 
     path += (j === 0 ? "M" : "L") + px + " " + py + " ";
+
+    // ✅ AÑADIR PUNTOS
+    const circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    circle.setAttribute("cx", px);
+    circle.setAttribute("cy", py);
+    circle.setAttribute("r", 3);
+    circle.setAttribute("fill", color);
+
+    svg.appendChild(circle);
   });
 
   const line = document.createElementNS("http://www.w3.org/2000/svg","path");
   line.setAttribute("d", path);
   line.setAttribute("stroke", color);
   line.setAttribute("fill", "none");
-  line.setAttribute("stroke-width", 3);
+  line.setAttribute("stroke-width", 2);
   svg.appendChild(line);
+
+  // ✅ AÑADIR NOMBRE AL FINAL
+  const lastX = x(jornadas.length-1);
+  const lastY = y(p[1][p[1].length-1]);
+
+  const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+  text.setAttribute("x", lastX + 5);
+  text.setAttribute("y", lastY);
+  text.setAttribute("fill", color);
+  text.setAttribute("font-size", "12");
+
+  text.textContent = p[0];
+
+  svg.appendChild(text);
 
 });
 </script>
 </div>
 """
+
 
 
 # ======================
