@@ -208,18 +208,22 @@ def main():
     tr:nth-child(3) {{ background: silver; color: black; font-weight: bold; }}
     tr:nth-child(4) {{ background: #cd7f32; color: black; font-weight: bold; }}
 
-    /* Totales normal */
-    tr:not(:nth-child(2)):not(:nth-child(3)):not(:nth-child(4)) td:last-child {{
+        
+    
+    /* ✅ Totales todas las filas */
+    td:last-child {{
         font-weight: bold;
         color: #00ffcc;
     }}
 
-    /* Totales TOP */
+    /* ✅ SOBRESCRIBIR EN TOP 3 (más prioridad) */
     tr:nth-child(2) td:last-child,
     tr:nth-child(3) td:last-child,
     tr:nth-child(4) td:last-child {{
-        color: inherit;
+        color: black !important;
     }}
+
+
 
     </style>
     </head>
