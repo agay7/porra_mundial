@@ -1,65 +1,29 @@
 
-<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body {
-    background:#111;
-    color:white;
-    font-family:Arial;
-    text-align:center;
-}
+body { background:#111; color:white; text-align:center; font-family:Arial; }
 
-table {
-    margin:20px auto;
-    border-collapse:collapse;
-}
+table { margin:auto; border-collapse:collapse; }
 
-th, td {
-    padding:10px;
-    border-bottom:1px solid #444;
-}
+th, td { padding:10px; border-bottom:1px solid #444; }
+th { background:#222; }
 
-th {
-    background:#222;
-}
+tbody tr:nth-of-type(1) { background:gold; color:black; }
+tbody tr:nth-of-type(2) { background:silver; color:black; }
+tbody tr:nth-of-type(3) { background:#cd7f32; color:black; }
 
-/* ✅ TOP 3 (arreglado) */
-tbody tr:nth-of-type(1) {
-    background:gold;
-    color:black;
-    font-weight:bold;
-}
-
-tbody tr:nth-of-type(2) {
-    background:silver;
-    color:black;
-    font-weight:bold;
-}
-
-tbody tr:nth-of-type(3) {
-    background:#cd7f32;
-    color:black;
-    font-weight:bold;
-}
-
-/* ✅ totales */
-tbody tr:nth-of-type(n+4) td:last-child {
-    color:#00ffcc;
-    font-weight:bold;
-}
+tbody tr:nth-of-type(n+4) td:last-child { color:#00ffcc; }
 </style>
-
 </head>
 
 <body>
 
 <h1>🏆 Clasificación Porra Mundial</h1>
 
-<p>Actualizado: 18/06 00:00:30</p>
+<p>Actualizado: 18/06 00:07:27</p>
 <p>Partidos jugados: 21 / 104</p>
 
 <table border="1" class="dataframe">
@@ -321,600 +285,61 @@ tbody tr:nth-of-type(n+4) td:last-child {
   </tbody>
 </table>
 
-<h2>📈 Evolución</h2>
-<pre style="color:#0f0; text-align:left; max-width:800px; margin:auto;">
-{
-  "md": [
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    8,
-    9,
-    10,
-    12,
-    14,
-    16,
-    17,
-    19,
-    20,
-    21
-  ],
-  "players": [
-    [
-      "Jorge Gamero",
-      [
-        0,
-        1,
-        4,
-        4,
-        7,
-        10,
-        15,
-        16,
-        21,
-        22,
-        27,
-        30,
-        33,
-        34,
-        35,
-        35
-      ]
-    ],
-    [
-      "Nessi Morant",
-      [
-        5,
-        5,
-        8,
-        9,
-        9,
-        14,
-        15,
-        16,
-        16,
-        17,
-        17,
-        22,
-        23,
-        29,
-        32,
-        32
-      ]
-    ],
-    [
-      "Álvaro Extremera",
-      [
-        5,
-        5,
-        10,
-        10,
-        10,
-        15,
-        20,
-        21,
-        24,
-        25,
-        30,
-        30,
-        30,
-        32,
-        32,
-        32
-      ]
-    ],
-    [
-      "Noel Olivares",
-      [
-        5,
-        5,
-        10,
-        11,
-        11,
-        16,
-        17,
-        18,
-        21,
-        22,
-        22,
-        25,
-        28,
-        30,
-        31,
-        31
-      ]
-    ],
-    [
-      "David Cabesa",
-      [
-        1,
-        1,
-        6,
-        6,
-        6,
-        6,
-        7,
-        10,
-        10,
-        11,
-        16,
-        19,
-        24,
-        28,
-        31,
-        31
-      ]
-    ],
-    [
-      "Ángel Gutiérrez",
-      [
-        5,
-        5,
-        10,
-        10,
-        10,
-        10,
-        11,
-        12,
-        15,
-        16,
-        16,
-        19,
-        24,
-        28,
-        31,
-        31
-      ]
-    ],
-    [
-      "Álvaro Vidal Sánchez",
-      [
-        5,
-        5,
-        10,
-        10,
-        10,
-        10,
-        13,
-        14,
-        19,
-        20,
-        20,
-        23,
-        24,
-        26,
-        29,
-        29
-      ]
-    ],
-    [
-      "Javier Sánchez Moreno",
-      [
-        5,
-        5,
-        10,
-        11,
-        11,
-        11,
-        12,
-        13,
-        18,
-        19,
-        19,
-        19,
-        22,
-        28,
-        29,
-        29
-      ]
-    ],
-    [
-      "Alberto Villardón",
-      [
-        5,
-        5,
-        10,
-        11,
-        11,
-        11,
-        12,
-        13,
-        13,
-        14,
-        14,
-        14,
-        17,
-        23,
-        26,
-        26
-      ]
-    ],
-    [
-      "Mario Redondo Carrasco",
-      [
-        1,
-        1,
-        6,
-        6,
-        6,
-        6,
-        7,
-        8,
-        13,
-        14,
-        19,
-        19,
-        22,
-        24,
-        25,
-        25
-      ]
-    ],
-    [
-      "Raúl Canabal",
-      [
-        5,
-        5,
-        10,
-        11,
-        11,
-        16,
-        17,
-        20,
-        20,
-        20,
-        20,
-        20,
-        20,
-        22,
-        25,
-        25
-      ]
-    ],
-    [
-      "David De Paz",
-      [
-        5,
-        5,
-        5,
-        6,
-        6,
-        11,
-        12,
-        13,
-        13,
-        14,
-        14,
-        14,
-        15,
-        21,
-        24,
-        24
-      ]
-    ],
-    [
-      "Carlos Moreno",
-      [
-        0,
-        0,
-        0,
-        1,
-        1,
-        6,
-        7,
-        8,
-        11,
-        12,
-        15,
-        15,
-        18,
-        20,
-        23,
-        23
-      ]
-    ],
-    [
-      "Alvaro Terron",
-      [
-        5,
-        5,
-        10,
-        11,
-        11,
-        11,
-        12,
-        13,
-        13,
-        13,
-        13,
-        13,
-        16,
-        22,
-        22,
-        22
-      ]
-    ],
-    [
-      "Samuel Fernández Duarte",
-      [
-        1,
-        6,
-        6,
-        6,
-        6,
-        6,
-        7,
-        10,
-        15,
-        15,
-        15,
-        18,
-        19,
-        21,
-        22,
-        22
-      ]
-    ],
-    [
-      "Javier Leton",
-      [
-        5,
-        5,
-        5,
-        6,
-        6,
-        6,
-        7,
-        8,
-        11,
-        12,
-        12,
-        12,
-        17,
-        19,
-        22,
-        22
-      ]
-    ],
-    [
-      "Alberto Martin Lopez",
-      [
-        5,
-        5,
-        5,
-        6,
-        6,
-        6,
-        7,
-        8,
-        8,
-        9,
-        9,
-        9,
-        12,
-        18,
-        21,
-        21
-      ]
-    ],
-    [
-      "Alejandro Sánchez",
-      [
-        1,
-        1,
-        1,
-        2,
-        2,
-        7,
-        8,
-        9,
-        9,
-        10,
-        10,
-        10,
-        13,
-        17,
-        20,
-        20
-      ]
-    ],
-    [
-      "Javier García",
-      [
-        1,
-        4,
-        4,
-        5,
-        8,
-        11,
-        12,
-        13,
-        13,
-        13,
-        13,
-        13,
-        18,
-        20,
-        20,
-        20
-      ]
-    ],
-    [
-      "Alberto Gay",
-      [
-        3,
-        3,
-        8,
-        9,
-        9,
-        9,
-        10,
-        11,
-        11,
-        11,
-        11,
-        11,
-        16,
-        18,
-        19,
-        19
-      ]
-    ],
-    [
-      "Sergio Fernandez",
-      [
-        5,
-        5,
-        5,
-        5,
-        5,
-        8,
-        8,
-        9,
-        9,
-        10,
-        10,
-        13,
-        14,
-        15,
-        16,
-        16
-      ]
-    ],
-    [
-      "Ruth Galvin",
-      [
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        2,
-        3,
-        3,
-        4,
-        4,
-        4,
-        7,
-        15,
-        16,
-        16
-      ]
-    ],
-    [
-      "Juan Carlos Ruiz",
-      [
-        1,
-        1,
-        6,
-        7,
-        7,
-        7,
-        8,
-        9,
-        9,
-        9,
-        9,
-        12,
-        13,
-        15,
-        15,
-        15
-      ]
-    ],
-    [
-      "Miguel Lara Cantón",
-      [
-        1,
-        1,
-        1,
-        2,
-        2,
-        7,
-        8,
-        9,
-        9,
-        9,
-        9,
-        9,
-        10,
-        14,
-        15,
-        15
-      ]
-    ],
-    [
-      "Cristian Luque",
-      [
-        1,
-        1,
-        1,
-        1,
-        1,
-        4,
-        5,
-        6,
-        6,
-        6,
-        6,
-        6,
-        7,
-        13,
-        14,
-        14
-      ]
-    ],
-    [
-      "Óscar Espinosa",
-      [
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        4,
-        4,
-        5,
-        5,
-        8,
-        8,
-        9,
-        9,
-        9
-      ]
-    ],
-    [
-      "Jesús García",
-      [
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        2,
-        3,
-        3,
-        4,
-        4,
-        4,
-        4,
-        6,
-        7,
-        7
-      ]
-    ]
-  ]
+
+<div class="evo">
+<h2>📈 Evolución de la clasificación</h2>
+
+<svg id="chart" viewBox="0 0 900 500"></svg>
+
+<script>
+const DATA = {"md": [1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 14, 16, 17, 19, 20, 21], "players": [["Jorge Gamero", [0, 1, 4, 4, 7, 10, 15, 16, 21, 22, 27, 30, 33, 34, 35, 35]], ["Nessi Morant", [5, 5, 8, 9, 9, 14, 15, 16, 16, 17, 17, 22, 23, 29, 32, 32]], ["Álvaro Extremera", [5, 5, 10, 10, 10, 15, 20, 21, 24, 25, 30, 30, 30, 32, 32, 32]], ["Noel Olivares", [5, 5, 10, 11, 11, 16, 17, 18, 21, 22, 22, 25, 28, 30, 31, 31]], ["David Cabesa", [1, 1, 6, 6, 6, 6, 7, 10, 10, 11, 16, 19, 24, 28, 31, 31]], ["Ángel Gutiérrez", [5, 5, 10, 10, 10, 10, 11, 12, 15, 16, 16, 19, 24, 28, 31, 31]], ["Álvaro Vidal Sánchez", [5, 5, 10, 10, 10, 10, 13, 14, 19, 20, 20, 23, 24, 26, 29, 29]], ["Javier Sánchez Moreno", [5, 5, 10, 11, 11, 11, 12, 13, 18, 19, 19, 19, 22, 28, 29, 29]], ["Alberto Villardón", [5, 5, 10, 11, 11, 11, 12, 13, 13, 14, 14, 14, 17, 23, 26, 26]], ["Mario Redondo Carrasco", [1, 1, 6, 6, 6, 6, 7, 8, 13, 14, 19, 19, 22, 24, 25, 25]], ["Raúl Canabal", [5, 5, 10, 11, 11, 16, 17, 20, 20, 20, 20, 20, 20, 22, 25, 25]], ["David De Paz", [5, 5, 5, 6, 6, 11, 12, 13, 13, 14, 14, 14, 15, 21, 24, 24]], ["Carlos Moreno", [0, 0, 0, 1, 1, 6, 7, 8, 11, 12, 15, 15, 18, 20, 23, 23]], ["Alvaro Terron", [5, 5, 10, 11, 11, 11, 12, 13, 13, 13, 13, 13, 16, 22, 22, 22]], ["Samuel Fernández Duarte", [1, 6, 6, 6, 6, 6, 7, 10, 15, 15, 15, 18, 19, 21, 22, 22]], ["Javier Leton", [5, 5, 5, 6, 6, 6, 7, 8, 11, 12, 12, 12, 17, 19, 22, 22]], ["Alberto Martin Lopez", [5, 5, 5, 6, 6, 6, 7, 8, 8, 9, 9, 9, 12, 18, 21, 21]], ["Alejandro Sánchez", [1, 1, 1, 2, 2, 7, 8, 9, 9, 10, 10, 10, 13, 17, 20, 20]], ["Javier García", [1, 4, 4, 5, 8, 11, 12, 13, 13, 13, 13, 13, 18, 20, 20, 20]], ["Alberto Gay", [3, 3, 8, 9, 9, 9, 10, 11, 11, 11, 11, 11, 16, 18, 19, 19]], ["Sergio Fernandez", [5, 5, 5, 5, 5, 8, 8, 9, 9, 10, 10, 13, 14, 15, 16, 16]], ["Ruth Galvin", [1, 1, 1, 1, 1, 1, 2, 3, 3, 4, 4, 4, 7, 15, 16, 16]], ["Juan Carlos Ruiz", [1, 1, 6, 7, 7, 7, 8, 9, 9, 9, 9, 12, 13, 15, 15, 15]], ["Miguel Lara Cantón", [1, 1, 1, 2, 2, 7, 8, 9, 9, 9, 9, 9, 10, 14, 15, 15]], ["Cristian Luque", [1, 1, 1, 1, 1, 4, 5, 6, 6, 6, 6, 6, 7, 13, 14, 14]], ["Óscar Espinosa", [1, 1, 1, 2, 2, 2, 3, 4, 4, 5, 5, 8, 8, 9, 9, 9]], ["Jesús García", [1, 1, 1, 1, 1, 1, 2, 3, 3, 4, 4, 4, 4, 6, 7, 7]]]};
+
+const svg = document.getElementById("chart");
+const width = 900;
+const height = 500;
+
+const players = DATA.players;
+const jornadas = DATA.md;
+
+const maxPts = Math.max(...players.flatMap(p => p[1]));
+
+function x(i) {
+  return 50 + (i / (jornadas.length-1)) * (width-100);
 }
-</pre>
+
+function y(p) {
+  return height - 50 - (p / maxPts) * (height-100);
+}
+
+players.forEach((p, i) => {
+
+  const color = i == 0 ? "gold" :
+                i == 1 ? "silver" :
+                i == 2 ? "#cd7f32" :
+                "hsl(" + (i*40%360) + ",70%,60%)";
+
+  let path = "";
+
+  p[1].forEach((pts, j) => {
+    const px = x(j);
+    const py = y(pts);
+
+    path += (j === 0 ? "M" : "L") + px + " " + py + " ";
+  });
+
+  const line = document.createElementNS("http://www.w3.org/2000/svg","path");
+  line.setAttribute("d", path);
+  line.setAttribute("stroke", color);
+  line.setAttribute("fill", "none");
+  line.setAttribute("stroke-width", 3);
+  svg.appendChild(line);
+
+});
+</script>
+</div>
+
 
 </body>
 </html>
 
-<!-- 1781733630.791227 -->
+<!-- update 1781734047.230078 -->

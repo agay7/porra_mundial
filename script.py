@@ -68,10 +68,11 @@ def contar_partidos_jugados(maestro):
 
 
 # ======================
-# HISTÓRICO
+# HISTÓRICO (CORREGIDO)
 # ======================
 
 def actualizar_historico(df, partidos_jugados, ruta="historico.json"):
+
     totales = {
         str(r["Participante"]).replace("_", " ").strip(): int(r["Totales"])
         for _, r in df.iterrows()
@@ -83,8 +84,8 @@ def actualizar_historico(df, partidos_jugados, ruta="historico.json"):
     else:
         hist = {"md": [], "players": []}
 
-    md = hist["md"]
-    players = {p[0]: p for p in hist["players"]}
+    md = hist.get("md", [])
+    players = {p[0]: p for p in hist.get("players", [])}
 
     if md and md[-1] == partidos_jugados:
         for nombre, pts in totales.items():
@@ -106,6 +107,65 @@ def actualizar_historico(df, partidos_jugados, ruta="historico.json"):
         json.dump(hist, f, ensure_ascii=False)
 
     return hist
+
+
+# ======================
+# HTML GRÁFICA (FULL)
+# ======================
+
+CHART_BLOCK = """
+<div class="evo">
+<h2>📈 Evolución de la clasificación</h2>
+
+<svg id="chart" viewBox="0 0 900 500"></svg>
+
+<script>
+const DATA = __EMBED__;
+
+const svg = document.getElementById("chart");
+const width = 900;
+const height = 500;
+
+const players = DATA.players;
+const jornadas = DATA.md;
+
+const maxPts = Math.max(...players.flatMap(p => p[1]));
+
+function x(i) {
+  return 50 + (i / (jornadas.length-1)) * (width-100);
+}
+
+function y(p) {
+  return height - 50 - (p / maxPts) * (height-100);
+}
+
+players.forEach((p, i) => {
+
+  const color = i == 0 ? "gold" :
+                i == 1 ? "silver" :
+                i == 2 ? "#cd7f32" :
+                "hsl(" + (i*40%360) + ",70%,60%)";
+
+  let path = "";
+
+  p[1].forEach((pts, j) => {
+    const px = x(j);
+    const py = y(pts);
+
+    path += (j === 0 ? "M" : "L") + px + " " + py + " ";
+  });
+
+  const line = document.createElementNS("http://www.w3.org/2000/svg","path");
+  line.setAttribute("d", path);
+  line.setAttribute("stroke", color);
+  line.setAttribute("fill", "none");
+  line.setAttribute("stroke-width", 3);
+  svg.appendChild(line);
+
+});
+</script>
+</div>
+"""
 
 
 # ======================
@@ -140,11 +200,8 @@ def main():
     df = pd.DataFrame(ranking).sort_values("Totales", ascending=False).reset_index(drop=True)
     df.insert(0, "Posición", df.index + 1)
 
-    # ======================
     # MOVIMIENTO
-    # ======================
     if os.path.exists(SALIDA):
-
         old = pd.read_excel(SALIDA)
         pos_ant = {r["Participante"]: r["Posición"] for _, r in old.iterrows()}
 
@@ -159,32 +216,21 @@ def main():
 
             diff = pos_ant[nombre] - fila["Posición"]
 
-            if diff > 0:
-                mov.append(f"↑{diff}")
-            elif diff < 0:
-                mov.append(f"↓{abs(diff)}")
-            else:
-                mov.append("=")
+            if diff > 0: mov.append(f"↑{diff}")
+            elif diff < 0: mov.append(f"↓{abs(diff)}")
+            else: mov.append("=")
 
         df.insert(1, "Mov", mov)
 
-    # ======================
-    # GUARDAR EXCEL
-    # ======================
     df.to_excel(SALIDA, index=False)
 
-    # ======================
     # HISTÓRICO
-    # ======================
     hist = actualizar_historico(df, partidos_jugados)
 
-    # ======================
-    # HTML
-    # ======================
-
+    # COLORES MOV
     def formato_mov(val):
         if "↑" in str(val): return f'<span style="color:#00ff00">{val}</span>'
-        elif "↓" in str(val): return f'<span style="color:#ff4444">{val}</span>'
+        if "↓" in str(val): return f'<span style="color:#ff4444">{val}</span>'
         return val
 
     if "Mov" in df.columns:
@@ -194,61 +240,27 @@ def main():
 
     now = datetime.now().strftime("%d/%m %H:%M:%S")
 
+    chart_html = CHART_BLOCK.replace("__EMBED__", json.dumps(hist, ensure_ascii=False))
+
     html = f"""
-<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body {{
-    background:#111;
-    color:white;
-    font-family:Arial;
-    text-align:center;
-}}
+body {{ background:#111; color:white; text-align:center; font-family:Arial; }}
 
-table {{
-    margin:20px auto;
-    border-collapse:collapse;
-}}
+table {{ margin:auto; border-collapse:collapse; }}
 
-th, td {{
-    padding:10px;
-    border-bottom:1px solid #444;
-}}
+th, td {{ padding:10px; border-bottom:1px solid #444; }}
+th {{ background:#222; }}
 
-th {{
-    background:#222;
-}}
+tbody tr:nth-of-type(1) {{ background:gold; color:black; }}
+tbody tr:nth-of-type(2) {{ background:silver; color:black; }}
+tbody tr:nth-of-type(3) {{ background:#cd7f32; color:black; }}
 
-/* ✅ TOP 3 (arreglado) */
-tbody tr:nth-of-type(1) {{
-    background:gold;
-    color:black;
-    font-weight:bold;
-}}
-
-tbody tr:nth-of-type(2) {{
-    background:silver;
-    color:black;
-    font-weight:bold;
-}}
-
-tbody tr:nth-of-type(3) {{
-    background:#cd7f32;
-    color:black;
-    font-weight:bold;
-}}
-
-/* ✅ totales */
-tbody tr:nth-of-type(n+4) td:last-child {{
-    color:#00ffcc;
-    font-weight:bold;
-}}
+tbody tr:nth-of-type(n+4) td:last-child {{ color:#00ffcc; }}
 </style>
-
 </head>
 
 <body>
@@ -260,30 +272,24 @@ tbody tr:nth-of-type(n+4) td:last-child {{
 
 {html_table}
 
-<h2>📈 Evolución</h2>
-<pre style="color:#0f0; text-align:left; max-width:800px; margin:auto;">
-{json.dumps(hist, indent=2, ensure_ascii=False)}
-</pre>
+{chart_html}
 
 </body>
 </html>
 """
 
-    html += f"\n<!-- {datetime.now().timestamp()} -->"
+    html += f"\n<!-- update {datetime.now().timestamp()} -->"
 
     with open(HTML_SALIDA, "w", encoding="utf-8") as f:
         f.write(html)
 
     print("✅ HTML generado")
 
-    # ======================
-    # GIT
-    # ======================
     os.system("git add .")
     os.system(f'git commit -m "update {now}"')
     os.system("git push")
 
-    print("🚀 Actualizado en GitHub")
+    print("🚀 Subido a GitHub")
 
 
 if __name__ == "__main__":
