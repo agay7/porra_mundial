@@ -16,10 +16,10 @@ P_GANADOR = 1
 P_DIFERENCIA = 3
 P_RESULTADO_EXACTO = 5
 
-# ======================
-# FUNCIONES
-# ======================
 
+# ======================
+# PUNTOS
+# ======================
 def puntos_partido(real, apuesta):
     gl_r, gv_r = real["GOLES LOCAL"], real["GOLES VISITANTE"]
     gl_a, gv_a = apuesta["GOLES LOCAL"], apuesta["GOLES VISITANTE"]
@@ -39,7 +39,6 @@ def puntos_partido(real, apuesta):
 
 def puntuar(maestro, jugador):
     total, g, d, e = 0, 0, 0, 0
-
     partidos = maestro[(maestro["ID"] >= 1) & (maestro["ID"] <= 104)]
 
     for _, real in partidos.iterrows():
@@ -50,9 +49,7 @@ def puntuar(maestro, jugador):
         if fila.empty:
             continue
 
-        apuesta = fila.iloc[0]
-        puntos = puntos_partido(real, apuesta)
-
+        puntos = puntos_partido(real, fila.iloc[0])
         total += puntos
 
         if puntos == 5: e += 1
@@ -63,14 +60,12 @@ def puntuar(maestro, jugador):
 
 
 def contar_partidos_jugados(maestro):
-    partidos = maestro[(maestro["ID"] >= 1) & (maestro["ID"] <= 104)]
-    return int((partidos["JUGADO"] == 1).sum())
+    return int((maestro["JUGADO"] == 1).sum())
 
 
 # ======================
-# HISTÓRICO (CORREGIDO)
+# HISTÓRICO CORRECTO
 # ======================
-
 def actualizar_historico(df, partidos_jugados, ruta="historico.json"):
 
     totales = {
@@ -91,17 +86,29 @@ def actualizar_historico(df, partidos_jugados, ruta="historico.json"):
         for nombre, pts in totales.items():
             if nombre in players:
                 players[nombre][1][-1] = pts
+            else:
+                players[nombre] = [nombre, [None]*(len(md)-1) + [pts]]
+
     else:
         md.append(partidos_jugados)
         n = len(md)
 
         for nombre, pts in totales.items():
             if nombre in players:
-                players[nombre][1].append(pts)
+                arr = players[nombre][1]
+                while len(arr) < n-1:
+                    arr.append(arr[-1] if arr else None)
+                arr.append(pts)
             else:
                 players[nombre] = [nombre, [None]*(n-1) + [pts]]
 
-    hist = {"md": md, "players": list(players.values())}
+        for p in players.values():
+            if len(p[1]) < n:
+                p[1].append(p[1][-1] if p[1] else None)
+
+    plist = sorted(players.values(), key=lambda p: -(p[1][-1] or 0))
+
+    hist = {"md": md, "players": plist}
 
     with open(ruta, "w", encoding="utf-8") as f:
         json.dump(hist, f, ensure_ascii=False)
@@ -110,92 +117,115 @@ def actualizar_historico(df, partidos_jugados, ruta="historico.json"):
 
 
 # ======================
-# HTML GRÁFICA (FULL)
+# CSS + GRÁFICA PRO (IMPORTANTE)
 # ======================
+PAGE_CSS = """
+body { background:#111; color:white; font-family:Arial; text-align:center; }
+
+table { margin:auto; border-collapse:collapse; }
+th, td { padding:10px; border-bottom:1px solid #444; }
+
+tbody tr:nth-of-type(1) { background:gold; color:black; }
+tbody tr:nth-of-type(2) { background:silver; color:black; }
+tbody tr:nth-of-type(3) { background:#cd7f32; color:black; }
+
+tbody tr:nth-of-type(n+4) td:last-child { color:#00ffcc; }
+
+.evo { max-width:1000px; margin:40px auto; }
+.legend { margin-top:20px; }
+"""
 
 CHART_BLOCK = """
 <div class="evo">
-<h2>📈 Evolución de la clasificación</h2>
-
-<svg id="chart" viewBox="0 0 900 500"></svg>
+<h2>📈 Evolución</h2>
+<svg id="evoSvg" viewBox="0 0 900 500"></svg>
 
 <script>
-const DATA = __EMBED__;
+(function(){
 
-const svg = document.getElementById("chart");
-const width = 900;
-const height = 500;
+const DATA = __EMBED__;
+const svg = document.getElementById("evoSvg");
 
 const players = DATA.players;
-const jornadas = DATA.md;
+const md = DATA.md;
+
+const W = 900;
+const H = 500;
 
 const maxPts = Math.max(...players.flatMap(p => p[1]));
 
-function x(i) {
-  return 50 + (i / (jornadas.length-1)) * (width-100);
+function X(i) {
+  return 50 + (i / (md.length-1)) * (W-100);
 }
 
-function y(p) {
-  return height - 50 - (p / maxPts) * (height-100);
+function Y(p) {
+  return H - 50 - (p/maxPts)*(H-100);
 }
 
-players.forEach((p, i) => {
+// grid
+for(let g=0; g<=maxPts; g+=5){
+  const y = Y(g);
+  const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+  line.setAttribute("x1", 50);
+  line.setAttribute("x2", W-20);
+  line.setAttribute("y1", y);
+  line.setAttribute("y2", y);
+  line.setAttribute("stroke", "#333");
+  svg.appendChild(line);
+}
 
-  const color = i == 0 ? "gold" :
-                i == 1 ? "silver" :
-                i == 2 ? "#cd7f32" :
-                "hsl(" + (i*40%360) + ",70%,60%)";
+// lineas
+players.forEach((p,i) => {
 
-  let path = "";
+  const color = i==0?"gold":i==1?"silver":i==2?"#cd7f32":"hsl("+(i*35%360)+",70%,60%)";
 
-  p[1].forEach((pts, j) => {
-    const px = x(j);
-    const py = y(pts);
+  let d="";
 
-    path += (j === 0 ? "M" : "L") + px + " " + py + " ";
+  p[1].forEach((pts,j)=>{
+    const x = X(j);
+    const y = Y(pts);
+    d += (j==0?"M":"L")+x+" "+y+" ";
 
-    // ✅ AÑADIR PUNTOS
-    const circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
-    circle.setAttribute("cx", px);
-    circle.setAttribute("cy", py);
-    circle.setAttribute("r", 3);
-    circle.setAttribute("fill", color);
-
-    svg.appendChild(circle);
+    const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",x);
+    c.setAttribute("cy",y);
+    c.setAttribute("r",3);
+    c.setAttribute("fill",color);
+    svg.appendChild(c);
   });
 
-  const line = document.createElementNS("http://www.w3.org/2000/svg","path");
-  line.setAttribute("d", path);
-  line.setAttribute("stroke", color);
-  line.setAttribute("fill", "none");
-  line.setAttribute("stroke-width", 2);
-  svg.appendChild(line);
-
-  // ✅ AÑADIR NOMBRE AL FINAL
-  const lastX = x(jornadas.length-1);
-  const lastY = y(p[1][p[1].length-1]);
-
-  const text = document.createElementNS("http://www.w3.org/2000/svg","text");
-  text.setAttribute("x", lastX + 5);
-  text.setAttribute("y", lastY);
-  text.setAttribute("fill", color);
-  text.setAttribute("font-size", "12");
-
-  text.textContent = p[0];
-
-  svg.appendChild(text);
+  const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+  path.setAttribute("d",d);
+  path.setAttribute("stroke",color);
+  path.setAttribute("stroke-width",2);
+  path.setAttribute("fill","none");
+  svg.appendChild(path);
 
 });
+
+// jornadas
+md.forEach((m,i)=>{
+  const x = X(i);
+  const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("x",x);
+  t.setAttribute("y",H-10);
+  t.setAttribute("fill","#aaa");
+  t.setAttribute("font-size",10);
+  t.setAttribute("text-anchor","middle");
+  t.textContent=m;
+  svg.appendChild(t);
+});
+
+})();
 </script>
+
 </div>
 """
-
 
 
 # ======================
 # MAIN
 # ======================
-
 def main():
 
     maestro = pd.read_excel(RUTA_MAESTRO, sheet_name="Datos")
@@ -204,95 +234,58 @@ def main():
     ranking = []
 
     for archivo in RUTA_PARTICIPANTES.glob("*.xlsx"):
-
         if archivo.name.startswith("~$"):
             continue
 
-        nombre = archivo.stem
         jugador = pd.read_excel(archivo, sheet_name="Datos")
-
         puntos, g, d, e = puntuar(maestro, jugador)
 
         ranking.append({
-            "Participante": nombre,
+            "Participante": archivo.stem,
             "Signo": g,
             "Diferencia": d,
             "Exactos": e,
             "Totales": puntos
         })
 
-    df = pd.DataFrame(ranking).sort_values("Totales", ascending=False).reset_index(drop=True)
-    df.insert(0, "Posición", df.index + 1)
+    df = pd.DataFrame(ranking).sort_values("Totales", ascending=False)
+    df.insert(0, "Posición", range(1, len(df)+1))
 
-    # MOVIMIENTO
     if os.path.exists(SALIDA):
         old = pd.read_excel(SALIDA)
-        pos_ant = {r["Participante"]: r["Posición"] for _, r in old.iterrows()}
+        pos_old = dict(zip(old["Participante"], old["Posición"]))
 
         mov = []
-
-        for _, fila in df.iterrows():
-            nombre = fila["Participante"]
-
-            if nombre not in pos_ant:
+        for _, r in df.iterrows():
+            if r["Participante"] not in pos_old:
                 mov.append("🆕")
-                continue
-
-            diff = pos_ant[nombre] - fila["Posición"]
-
-            if diff > 0: mov.append(f"↑{diff}")
-            elif diff < 0: mov.append(f"↓{abs(diff)}")
-            else: mov.append("=")
+            else:
+                diff = pos_old[r["Participante"]] - r["Posición"]
+                mov.append("↑" if diff>0 else "↓" if diff<0 else "=")
 
         df.insert(1, "Mov", mov)
 
     df.to_excel(SALIDA, index=False)
 
-    # HISTÓRICO
     hist = actualizar_historico(df, partidos_jugados)
-
-    # COLORES MOV
-    def formato_mov(val):
-        if "↑" in str(val): return f'<span style="color:#00ff00">{val}</span>'
-        if "↓" in str(val): return f'<span style="color:#ff4444">{val}</span>'
-        return val
-
-    if "Mov" in df.columns:
-        df["Mov"] = df["Mov"].apply(formato_mov)
 
     html_table = df.to_html(index=False, escape=False)
 
-    now = datetime.now().strftime("%d/%m %H:%M:%S")
-
     chart_html = CHART_BLOCK.replace("__EMBED__", json.dumps(hist, ensure_ascii=False))
+
+    now = datetime.now().strftime("%d/%m %H:%M:%S")
 
     html = f"""
 <html>
 <head>
-<meta charset="UTF-8">
-
-<style>
-body {{ background:#111; color:white; text-align:center; font-family:Arial; }}
-
-table {{ margin:auto; border-collapse:collapse; }}
-
-th, td {{ padding:10px; border-bottom:1px solid #444; }}
-th {{ background:#222; }}
-
-tbody tr:nth-of-type(1) {{ background:gold; color:black; }}
-tbody tr:nth-of-type(2) {{ background:silver; color:black; }}
-tbody tr:nth-of-type(3) {{ background:#cd7f32; color:black; }}
-
-tbody tr:nth-of-type(n+4) td:last-child {{ color:#00ffcc; }}
-</style>
+<style>{PAGE_CSS}</style>
 </head>
 
 <body>
 
-<h1>🏆 Clasificación Porra Mundial</h1>
-
+<h1>🏆 Porra Mundial</h1>
 <p>Actualizado: {now}</p>
-<p>Partidos jugados: {partidos_jugados} / 104</p>
+<p>Partidos: {partidos_jugados}</p>
 
 {html_table}
 
@@ -302,18 +295,16 @@ tbody tr:nth-of-type(n+4) td:last-child {{ color:#00ffcc; }}
 </html>
 """
 
-    html += f"\n<!-- update {datetime.now().timestamp()} -->"
+    html += f"\n<!-- {datetime.now().timestamp()} -->"
 
     with open(HTML_SALIDA, "w", encoding="utf-8") as f:
         f.write(html)
-
-    print("✅ HTML generado")
 
     os.system("git add .")
     os.system(f'git commit -m "update {now}"')
     os.system("git push")
 
-    print("🚀 Subido a GitHub")
+    print("✅ TODO OK - gráfico pro activo")
 
 
 if __name__ == "__main__":
