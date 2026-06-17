@@ -1,84 +1,68 @@
 
-    <html>
-    <head>
-    <meta charset="UTF-8">
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+<style>
+body {
+    background:#111;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+}
 
-    <title>Porra Mundial</title>
+table {
+    margin:20px auto;
+    border-collapse:collapse;
+}
 
-    <style>
+th, td {
+    padding:10px;
+    border-bottom:1px solid #444;
+}
 
-    body {
-        background: #111;
-        color: white;
-        font-family: Arial;
-        text-align: center;
-    }
+th {
+    background:#222;
+}
 
-    h1 {
-        margin-top: 20px;
-    }
+/* ✅ TOP 3 (arreglado) */
+tbody tr:nth-of-type(1) {
+    background:gold;
+    color:black;
+    font-weight:bold;
+}
 
-    table {
-        margin: 20px auto;
-        border-collapse: collapse;
-    }
+tbody tr:nth-of-type(2) {
+    background:silver;
+    color:black;
+    font-weight:bold;
+}
 
-    th, td {
-        padding: 10px;
-        border-bottom: 1px solid #444;
-    }
+tbody tr:nth-of-type(3) {
+    background:#cd7f32;
+    color:black;
+    font-weight:bold;
+}
 
-    th {
-        background: #222;
-    }
+/* ✅ totales */
+tbody tr:nth-of-type(n+4) td:last-child {
+    color:#00ffcc;
+    font-weight:bold;
+}
+</style>
 
-    tbody tr:nth-child(even) {
-        background: #1a1a1a;
-    }
+</head>
 
-    /* TOP 3 ROBUSTO */
-    tbody tr:nth-of-type(1) {
-    background: gold;
-    color: black;
-    font-weight: bold;
-    }
+<body>
 
-    tbody tr:nth-of-type(2) {
-        background: silver;
-        color: black;
-        font-weight: bold;
-    }
+<h1>🏆 Clasificación Porra Mundial</h1>
 
-    tbody tr:nth-of-type(3) {
-        background: #cd7f32;
-        color: black;
-        font-weight: bold;
-    }
+<p>Actualizado: 17/06 23:57:07</p>
+<p>Partidos jugados: 21 / 104</p>
 
-    # ✅ Totales SOLO fuera del TOP
-    
-    tbody tr:nth-of-type(n+4) td:last-child {
-        font-weight: bold;
-        color: #00ffcc;
-    }
-
-
-    </style>
-
-    </head>
-
-    <body>
-
-    <h1>🏆 Clasificación Porra Mundial</h1>
-
-    <p>Actualizado: 17/06 21:29:30</p>
-    <p>Partidos jugados: 21 / 104</p>
-
-    <table border="1" class="dataframe">
+<table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
       <th>Posición</th>
@@ -337,7 +321,180 @@
   </tbody>
 </table>
 
-    </body>
-    </html>
-    
-<!-- update 1781724570.406082 -->
+<h2>📈 Evolución</h2>
+<pre style="color:#0f0; text-align:left; max-width:800px; margin:auto;">
+{
+  "md": [
+    21
+  ],
+  "players": [
+    [
+      "Jorge Gamero",
+      [
+        35
+      ]
+    ],
+    [
+      "Nessi Morant",
+      [
+        32
+      ]
+    ],
+    [
+      "Álvaro Extremera",
+      [
+        32
+      ]
+    ],
+    [
+      "Noel Olivares",
+      [
+        31
+      ]
+    ],
+    [
+      "David Cabesa",
+      [
+        31
+      ]
+    ],
+    [
+      "Ángel Gutiérrez",
+      [
+        31
+      ]
+    ],
+    [
+      "Álvaro Vidal Sánchez",
+      [
+        29
+      ]
+    ],
+    [
+      "Javier Sánchez Moreno",
+      [
+        29
+      ]
+    ],
+    [
+      "Alberto Villardón",
+      [
+        26
+      ]
+    ],
+    [
+      "Mario Redondo Carrasco",
+      [
+        25
+      ]
+    ],
+    [
+      "Raúl Canabal",
+      [
+        25
+      ]
+    ],
+    [
+      "David De Paz",
+      [
+        24
+      ]
+    ],
+    [
+      "Carlos Moreno",
+      [
+        23
+      ]
+    ],
+    [
+      "Alvaro Terron",
+      [
+        22
+      ]
+    ],
+    [
+      "Samuel Fernández Duarte",
+      [
+        22
+      ]
+    ],
+    [
+      "Javier Leton",
+      [
+        22
+      ]
+    ],
+    [
+      "Alberto Martin Lopez",
+      [
+        21
+      ]
+    ],
+    [
+      "Alejandro Sánchez",
+      [
+        20
+      ]
+    ],
+    [
+      "Javier García",
+      [
+        20
+      ]
+    ],
+    [
+      "Alberto Gay",
+      [
+        19
+      ]
+    ],
+    [
+      "Sergio Fernandez",
+      [
+        16
+      ]
+    ],
+    [
+      "Ruth Galvin",
+      [
+        16
+      ]
+    ],
+    [
+      "Juan Carlos Ruiz",
+      [
+        15
+      ]
+    ],
+    [
+      "Miguel Lara Cantón",
+      [
+        15
+      ]
+    ],
+    [
+      "Cristian Luque",
+      [
+        14
+      ]
+    ],
+    [
+      "Óscar Espinosa",
+      [
+        9
+      ]
+    ],
+    [
+      "Jesús García",
+      [
+        7
+      ]
+    ]
+  ]
+}
+</pre>
+
+</body>
+</html>
+
+<!-- 1781733427.701533 -->

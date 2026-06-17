@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import os
+import json
 from datetime import datetime
 
 # ======================
@@ -18,8 +19,8 @@ P_RESULTADO_EXACTO = 5
 # ======================
 # FUNCIONES
 # ======================
-def puntos_partido(real, apuesta):
 
+def puntos_partido(real, apuesta):
     gl_r, gv_r = real["GOLES LOCAL"], real["GOLES VISITANTE"]
     gl_a, gv_a = apuesta["GOLES LOCAL"], apuesta["GOLES VISITANTE"]
 
@@ -28,10 +29,8 @@ def puntos_partido(real, apuesta):
 
     if ganador_r != ganador_a:
         return 0
-
     if gl_r == gl_a and gv_r == gv_a:
         return P_RESULTADO_EXACTO
-
     if (gl_r - gv_r) == (gl_a - gv_a):
         return P_DIFERENCIA
 
@@ -44,7 +43,6 @@ def puntuar(maestro, jugador):
     partidos = maestro[(maestro["ID"] >= 1) & (maestro["ID"] <= 104)]
 
     for _, real in partidos.iterrows():
-
         if int(real.get("JUGADO", 0)) != 1:
             continue
 
@@ -54,6 +52,7 @@ def puntuar(maestro, jugador):
 
         apuesta = fila.iloc[0]
         puntos = puntos_partido(real, apuesta)
+
         total += puntos
 
         if puntos == 5: e += 1
@@ -69,8 +68,50 @@ def contar_partidos_jugados(maestro):
 
 
 # ======================
+# HISTÓRICO
+# ======================
+
+def actualizar_historico(df, partidos_jugados, ruta="historico.json"):
+    totales = {
+        str(r["Participante"]).replace("_", " ").strip(): int(r["Totales"])
+        for _, r in df.iterrows()
+    }
+
+    if os.path.exists(ruta):
+        with open(ruta, encoding="utf-8") as f:
+            hist = json.load(f)
+    else:
+        hist = {"md": [], "players": []}
+
+    md = hist["md"]
+    players = {p[0]: p for p in hist["players"]}
+
+    if md and md[-1] == partidos_jugados:
+        for nombre, pts in totales.items():
+            if nombre in players:
+                players[nombre][1][-1] = pts
+    else:
+        md.append(partidos_jugados)
+        n = len(md)
+
+        for nombre, pts in totales.items():
+            if nombre in players:
+                players[nombre][1].append(pts)
+            else:
+                players[nombre] = [nombre, [None]*(n-1) + [pts]]
+
+    hist = {"md": md, "players": list(players.values())}
+
+    with open(ruta, "w", encoding="utf-8") as f:
+        json.dump(hist, f, ensure_ascii=False)
+
+    return hist
+
+
+# ======================
 # MAIN
 # ======================
+
 def main():
 
     maestro = pd.read_excel(RUTA_MAESTRO, sheet_name="Datos")
@@ -96,51 +137,36 @@ def main():
             "Totales": puntos
         })
 
-    # ======================
-    # DATAFRAME
-    # ======================
     df = pd.DataFrame(ranking).sort_values("Totales", ascending=False).reset_index(drop=True)
     df.insert(0, "Posición", df.index + 1)
 
     # ======================
     # MOVIMIENTO
     # ======================
-    clasificacion_anterior = None
-
     if os.path.exists(SALIDA):
-        try:
-            clasificacion_anterior = pd.read_excel(SALIDA)
-        except:
-            pass
 
-    if clasificacion_anterior is not None:
+        old = pd.read_excel(SALIDA)
+        pos_ant = {r["Participante"]: r["Posición"] for _, r in old.iterrows()}
 
-        posiciones_antiguas = {
-            fila["Participante"]: fila["Posición"]
-            for _, fila in clasificacion_anterior.iterrows()
-        }
-
-        movimientos = []
+        mov = []
 
         for _, fila in df.iterrows():
-
             nombre = fila["Participante"]
-            pos = fila["Posición"]
 
-            if nombre not in posiciones_antiguas:
-                movimientos.append("🆕")
+            if nombre not in pos_ant:
+                mov.append("🆕")
                 continue
 
-            diff = posiciones_antiguas[nombre] - pos
+            diff = pos_ant[nombre] - fila["Posición"]
 
             if diff > 0:
-                movimientos.append(f"↑{diff}")
+                mov.append(f"↑{diff}")
             elif diff < 0:
-                movimientos.append(f"↓{abs(diff)}")
+                mov.append(f"↓{abs(diff)}")
             else:
-                movimientos.append("=")
+                mov.append("=")
 
-        df.insert(1, "Mov", movimientos)
+        df.insert(1, "Mov", mov)
 
     # ======================
     # GUARDAR EXCEL
@@ -148,13 +174,17 @@ def main():
     df.to_excel(SALIDA, index=False)
 
     # ======================
+    # HISTÓRICO
+    # ======================
+    hist = actualizar_historico(df, partidos_jugados)
+
+    # ======================
     # HTML
     # ======================
+
     def formato_mov(val):
-        if "↑" in str(val):
-            return f'<span style="color:#00ff00">{val}</span>'
-        elif "↓" in str(val):
-            return f'<span style="color:#ff4d4d">{val}</span>'
+        if "↑" in str(val): return f'<span style="color:#00ff00">{val}</span>'
+        elif "↓" in str(val): return f'<span style="color:#ff4444">{val}</span>'
         return val
 
     if "Mov" in df.columns:
@@ -164,96 +194,82 @@ def main():
 
     now = datetime.now().strftime("%d/%m %H:%M:%S")
 
-    html_table = df.to_html(index=False, escape=False)
-
     html = f"""
-    <html>
-    <head>
-    <meta charset="UTF-8">
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+<style>
+body {{
+    background:#111;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+}}
 
-    <title>Porra Mundial</title>
+table {{
+    margin:20px auto;
+    border-collapse:collapse;
+}}
 
-    <style>
+th, td {{
+    padding:10px;
+    border-bottom:1px solid #444;
+}}
 
-    body {{
-        background: #111;
-        color: white;
-        font-family: Arial;
-        text-align: center;
-    }}
+th {{
+    background:#222;
+}}
 
-    h1 {{
-        margin-top: 20px;
-    }}
+/* ✅ TOP 3 (arreglado) */
+tbody tr:nth-of-type(1) {{
+    background:gold;
+    color:black;
+    font-weight:bold;
+}}
 
-    table {{
-        margin: 20px auto;
-        border-collapse: collapse;
-    }}
+tbody tr:nth-of-type(2) {{
+    background:silver;
+    color:black;
+    font-weight:bold;
+}}
 
-    th, td {{
-        padding: 10px;
-        border-bottom: 1px solid #444;
-    }}
+tbody tr:nth-of-type(3) {{
+    background:#cd7f32;
+    color:black;
+    font-weight:bold;
+}}
 
-    th {{
-        background: #222;
-    }}
+/* ✅ totales */
+tbody tr:nth-of-type(n+4) td:last-child {{
+    color:#00ffcc;
+    font-weight:bold;
+}}
+</style>
 
-    tbody tr:nth-child(even) {{
-        background: #1a1a1a;
-    }}
+</head>
 
-    /* TOP 3 ROBUSTO */
-    tbody tr:nth-of-type(1) {{
-    background: gold;
-    color: black;
-    font-weight: bold;
-    }}
+<body>
 
-    tbody tr:nth-of-type(2) {{
-        background: silver;
-        color: black;
-        font-weight: bold;
-    }}
+<h1>🏆 Clasificación Porra Mundial</h1>
 
-    tbody tr:nth-of-type(3) {{
-        background: #cd7f32;
-        color: black;
-        font-weight: bold;
-    }}
+<p>Actualizado: {now}</p>
+<p>Partidos jugados: {partidos_jugados} / 104</p>
 
-    # ✅ Totales SOLO fuera del TOP
-    
-    tbody tr:nth-of-type(n+4) td:last-child {{
-        font-weight: bold;
-        color: #00ffcc;
-    }}
+{html_table}
 
+<h2>📈 Evolución</h2>
+<pre style="color:#0f0; text-align:left; max-width:800px; margin:auto;">
+{json.dumps(hist, indent=2, ensure_ascii=False)}
+</pre>
 
-    </style>
+</body>
+</html>
+"""
 
-    </head>
-
-    <body>
-
-    <h1>🏆 Clasificación Porra Mundial</h1>
-
-    <p>Actualizado: {now}</p>
-    <p>Partidos jugados: {partidos_jugados} / 104</p>
-
-    {html_table}
-
-    </body>
-    </html>
-    """
-
-    # 🔥 FORZAR ACTUALIZACIÓN SIEMPRE
-    html += f"\n<!-- update {datetime.now().timestamp()} -->"
+    html += f"\n<!-- {datetime.now().timestamp()} -->"
 
     with open(HTML_SALIDA, "w", encoding="utf-8") as f:
         f.write(html)
@@ -261,15 +277,13 @@ def main():
     print("✅ HTML generado")
 
     # ======================
-    # AUTO PUSH
+    # GIT
     # ======================
-    print("🚀 Subiendo a GitHub...")
-
     os.system("git add .")
     os.system(f'git commit -m "update {now}"')
     os.system("git push")
 
-    print("✅ Todo actualizado")
+    print("🚀 Actualizado en GitHub")
 
 
 if __name__ == "__main__":
