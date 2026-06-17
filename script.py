@@ -2,11 +2,9 @@ import pandas as pd
 from pathlib import Path
 import os
 from datetime import datetime
-from openpyxl import load_workbook
-from openpyxl.styles import PatternFill
 
 # ======================
-# CONFIGURACIÓN
+# CONFIG
 # ======================
 RUTA_MAESTRO = Path("data/maestro.xlsx")
 RUTA_PARTICIPANTES = Path("data/participantes")
@@ -18,18 +16,17 @@ P_DIFERENCIA = 3
 P_RESULTADO_EXACTO = 5
 
 # ======================
-# PUNTUACIÓN PARTIDOS
+# FUNCIONES
 # ======================
 def puntos_partido(real, apuesta):
 
     gl_r, gv_r = real["GOLES LOCAL"], real["GOLES VISITANTE"]
     gl_a, gv_a = apuesta["GOLES LOCAL"], apuesta["GOLES VISITANTE"]
 
-    # ganador real
-    ganador_real = 1 if gl_r > gv_r else -1 if gv_r > gl_r else 0
-    ganador_apuesta = 1 if gl_a > gv_a else -1 if gv_a > gl_a else 0
+    ganador_r = 1 if gl_r > gv_r else -1 if gv_r > gl_r else 0
+    ganador_a = 1 if gl_a > gv_a else -1 if gv_a > gl_a else 0
 
-    if ganador_real != ganador_apuesta:
+    if ganador_r != ganador_a:
         return 0
 
     if gl_r == gl_a and gv_r == gv_a:
@@ -41,7 +38,7 @@ def puntos_partido(real, apuesta):
     return P_GANADOR
 
 
-def puntuar_partidos(maestro, jugador):
+def puntuar(maestro, jugador):
     total, g, d, e = 0, 0, 0, 0
 
     partidos = maestro[(maestro["ID"] >= 1) & (maestro["ID"] <= 104)]
@@ -57,15 +54,11 @@ def puntuar_partidos(maestro, jugador):
 
         apuesta = fila.iloc[0]
         puntos = puntos_partido(real, apuesta)
-
         total += puntos
 
-        if puntos == 5:
-            e += 1
-        elif puntos == 3:
-            d += 1
-        elif puntos == 1:
-            g += 1
+        if puntos == 5: e += 1
+        elif puntos == 3: d += 1
+        elif puntos == 1: g += 1
 
     return total, g, d, e
 
@@ -81,7 +74,6 @@ def contar_partidos_jugados(maestro):
 def main():
 
     maestro = pd.read_excel(RUTA_MAESTRO, sheet_name="Datos")
-
     partidos_jugados = contar_partidos_jugados(maestro)
 
     ranking = []
@@ -94,7 +86,7 @@ def main():
         nombre = archivo.stem
         jugador = pd.read_excel(archivo, sheet_name="Datos")
 
-        puntos, g, d, e = puntuar_partidos(maestro, jugador)
+        puntos, g, d, e = puntuar(maestro, jugador)
 
         ranking.append({
             "Participante": nombre,
@@ -105,7 +97,7 @@ def main():
         })
 
     # ======================
-    # CLASIFICACIÓN
+    # DATAFRAME
     # ======================
     df = pd.DataFrame(ranking).sort_values("Totales", ascending=False).reset_index(drop=True)
     df.insert(0, "Posición", df.index + 1)
@@ -132,16 +124,14 @@ def main():
 
         for _, fila in df.iterrows():
 
-            jugador = fila["Participante"]
-            posicion_actual = fila["Posición"]
+            nombre = fila["Participante"]
+            pos = fila["Posición"]
 
-            if jugador not in posiciones_antiguas:
+            if nombre not in posiciones_antiguas:
                 movimientos.append("🆕")
                 continue
 
-            posicion_anterior = posiciones_antiguas[jugador]
-
-            diff = posicion_anterior - posicion_actual
+            diff = posiciones_antiguas[nombre] - pos
 
             if diff > 0:
                 movimientos.append(f"↑{diff}")
@@ -174,7 +164,6 @@ def main():
 
     now = datetime.now().strftime("%d/%m %H:%M:%S")
 
-    
     html = f"""
     <html>
     <head>
@@ -186,8 +175,8 @@ def main():
 
     <title>Porra Mundial</title>
 
-
     <style>
+
     body {{
         background: #111;
         color: white;
@@ -198,6 +187,7 @@ def main():
     table {{
         margin: auto;
         border-collapse: collapse;
+        margin-top: 20px;
     }}
 
     th, td {{
@@ -213,31 +203,31 @@ def main():
         background: #1a1a1a;
     }}
 
-    tr:nth-child(2) {{
-        background: gold;
-        color: black;
-    }}
+    /* TOP 3 */
+    tr:nth-child(2) {{ background: gold; color: black; font-weight: bold; }}
+    tr:nth-child(3) {{ background: silver; color: black; font-weight: bold; }}
+    tr:nth-child(4) {{ background: #cd7f32; color: black; font-weight: bold; }}
 
-    tr:nth-child(3) {{
-        background: silver;
-        color: black;
-    }}
-
-    tr:nth-child(4) {{
-        background: #cd7f32;
-        color: black;
-    }}
-
-    td:last-child {{
+    /* Totales normal */
+    tr:not(:nth-child(2)):not(:nth-child(3)):not(:nth-child(4)) td:last-child {{
         font-weight: bold;
         color: #00ffcc;
+    }}
+
+    /* Totales TOP */
+    tr:nth-child(2) td:last-child,
+    tr:nth-child(3) td:last-child,
+    tr:nth-child(4) td:last-child {{
+        color: inherit;
     }}
 
     </style>
     </head>
 
     <body>
+
     <h1>🏆 Clasificación Porra Mundial</h1>
+
     <p>Actualizado: {now}</p>
     <p>Partidos jugados: {partidos_jugados} / 104</p>
 
@@ -246,7 +236,8 @@ def main():
     </body>
     </html>
     """
-    # FORZAR CAMBIO PARA QUE GITHUB ACTUALICE
+
+    # FORZAR CAMBIO
     html += f"\n<!-- update {datetime.now().timestamp()} -->"
 
     with open(HTML_SALIDA, "w", encoding="utf-8") as f:

@@ -9,8 +9,8 @@
 
     <title>Porra Mundial</title>
 
-
     <style>
+
     body {
         background: #111;
         color: white;
@@ -21,6 +21,7 @@
     table {
         margin: auto;
         border-collapse: collapse;
+        margin-top: 20px;
     }
 
     th, td {
@@ -36,32 +37,32 @@
         background: #1a1a1a;
     }
 
-    tr:nth-child(2) {
-        background: gold;
-        color: black;
-    }
+    /* TOP 3 */
+    tr:nth-child(2) { background: gold; color: black; font-weight: bold; }
+    tr:nth-child(3) { background: silver; color: black; font-weight: bold; }
+    tr:nth-child(4) { background: #cd7f32; color: black; font-weight: bold; }
 
-    tr:nth-child(3) {
-        background: silver;
-        color: black;
-    }
-
-    tr:nth-child(4) {
-        background: #cd7f32;
-        color: black;
-    }
-
-    td:last-child {
+    /* Totales normal */
+    tr:not(:nth-child(2)):not(:nth-child(3)):not(:nth-child(4)) td:last-child {
         font-weight: bold;
         color: #00ffcc;
+    }
+
+    /* Totales TOP */
+    tr:nth-child(2) td:last-child,
+    tr:nth-child(3) td:last-child,
+    tr:nth-child(4) td:last-child {
+        color: inherit;
     }
 
     </style>
     </head>
 
     <body>
+
     <h1>🏆 Clasificación Porra Mundial</h1>
-    <p>Actualizado: 17/06 20:47:41</p>
+
+    <p>Actualizado: 17/06 20:56:18</p>
     <p>Partidos jugados: 19 / 104</p>
 
     <table border="1" class="dataframe">
@@ -326,4 +327,4 @@
     </body>
     </html>
     
-<!-- update 1781722061.864031 -->
+<!-- update 1781722578.87504 -->
