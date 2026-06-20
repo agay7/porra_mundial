@@ -1,40 +1,49 @@
-<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'><meta http-equiv='Cache-Control' content='no-cache, no-store, must-revalidate'><meta http-equiv='Pragma' content='no-cache'><meta http-equiv='Expires' content='0'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Porra Mundial</title><style>
-* { box-sizing: border-box; }
-body { background:#111; color:#fff; font-family:Arial, Helvetica, sans-serif; text-align:center; margin:0; padding:0 12px 60px; }
-h1 { margin-top:24px; }
+
+<html>
+<head>
+<style>
+
+body { background:#111; color:white; font-family:Arial; text-align:center; }
+
 table { margin:20px auto; border-collapse:collapse; }
 th, td { padding:10px; border-bottom:1px solid #444; }
-th { background:#222; }
-tbody tr:nth-child(even) { background:#1a1a1a; }
-tbody tr:nth-of-type(1) { background:gold; color:#000; font-weight:bold; }
-tbody tr:nth-of-type(2) { background:silver; color:#000; font-weight:bold; }
-tbody tr:nth-of-type(3) { background:#cd7f32; color:#000; font-weight:bold; }
-tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
 
-/* ---- grafica de evolucion ---- */
-.evo { max-width:1000px; margin:50px auto 0; }
-.evo h2 { color:#fff; margin-bottom:4px; }
-.evo .sub { color:#888; font-size:13px; margin:0 0 14px; }
-.evo .controls { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:12px; }
-.evo button { background:#222; color:#ccc; border:1px solid #444; border-radius:6px; padding:7px 16px; cursor:pointer; font-family:inherit; font-size:13px; }
-.evo button.on { background:#00ffcc; color:#111; border-color:#00ffcc; font-weight:bold; }
-.evo button.ghost { color:#888; }
-.evo .chartwrap { background:#1a1a1a; border:1px solid #444; border-radius:10px; padding:8px 6px 2px; position:relative; }
-.evo svg { width:100%; height:auto; display:block; touch-action:pan-y; }
-.evo .legend { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:16px; }
-.evo .chip { display:flex; align-items:center; gap:7px; background:#222; border:1px solid #333; border-radius:20px; padding:5px 11px; cursor:pointer; font-size:12.5px; user-select:none; transition:opacity .12s; }
-.evo .chip:hover { border-color:#666; }
-.evo .chip .sw { width:11px; height:11px; border-radius:50%; flex:0 0 auto; }
-.evo .chip .pn { color:#fff; }
-.evo .chip .pp { color:#888; font-weight:bold; }
-.evo .chip.off { opacity:.4; text-decoration:line-through; }
-.evo .tip { position:absolute; pointer-events:none; background:#000; border:1px solid #00ffcc; border-radius:6px; padding:5px 9px; font-size:12px; opacity:0; transition:opacity .1s; white-space:nowrap; z-index:5; }
-.evo .hint { color:#777; font-size:12px; margin-top:10px; }
-</style></head><body><h1>🏆 Clasificación Porra Mundial</h1><p>Actualizado: 20/06 20:58:56</p><p>Partidos jugados: 33 / 104</p><table border="1" class="dataframe">
+tbody tr:nth-of-type(1) { background:gold; color:black; }
+tbody tr:nth-of-type(2) { background:silver; color:black; }
+tbody tr:nth-of-type(3) { background:#cd7f32; color:black; }
+
+.partidos {
+    max-width:900px;
+    margin:30px auto;
+    text-align:left;
+}
+
+.partido {
+    background:#1a1a1a;
+    padding:10px;
+    margin-bottom:15px;
+    border-radius:8px;
+}
+
+.partido h3 {
+    color:#00ffcc;
+    margin-bottom:5px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>🏆 Porra Mundial</h1>
+
+<p>Actualizado: 20/06 22:27:26</p>
+<p>Partidos jugados: 33</p>
+
+<table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
       <th>Posición</th>
-      <th>Mov</th>
       <th>Participante</th>
       <th>Signo</th>
       <th>Diferencia</th>
@@ -45,7 +54,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
   <tbody>
     <tr>
       <td>1</td>
-      <td>=</td>
       <td>David_Cabesa</td>
       <td>10</td>
       <td>5</td>
@@ -54,7 +62,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>2</td>
-      <td>=</td>
       <td>Mario_Redondo_Carrasco</td>
       <td>13</td>
       <td>2</td>
@@ -63,7 +70,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>3</td>
-      <td>=</td>
       <td>Noel_Olivares</td>
       <td>13</td>
       <td>6</td>
@@ -72,7 +78,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>4</td>
-      <td>=</td>
       <td>Jorge_Gamero</td>
       <td>11</td>
       <td>6</td>
@@ -81,7 +86,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>5</td>
-      <td>=</td>
       <td>Nessi_Morant</td>
       <td>11</td>
       <td>3</td>
@@ -90,7 +94,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>6</td>
-      <td>=</td>
       <td>Alberto_Villardón</td>
       <td>8</td>
       <td>4</td>
@@ -99,7 +102,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>7</td>
-      <td>=</td>
       <td>Álvaro_Extremera</td>
       <td>10</td>
       <td>3</td>
@@ -108,7 +110,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>8</td>
-      <td>=</td>
       <td>Alberto_Martin_Lopez</td>
       <td>10</td>
       <td>4</td>
@@ -117,7 +118,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>9</td>
-      <td>=</td>
       <td>David_De_Paz</td>
       <td>10</td>
       <td>2</td>
@@ -126,7 +126,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>10</td>
-      <td>=</td>
       <td>Carlos_Moreno</td>
       <td>10</td>
       <td>7</td>
@@ -135,7 +134,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>11</td>
-      <td>=</td>
       <td>Samuel_Fernández_Duarte</td>
       <td>13</td>
       <td>4</td>
@@ -144,7 +142,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>12</td>
-      <td>=</td>
       <td>Álvaro_Vidal_Sánchez</td>
       <td>11</td>
       <td>3</td>
@@ -153,7 +150,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>13</td>
-      <td>=</td>
       <td>Alvaro_Terron</td>
       <td>8</td>
       <td>2</td>
@@ -162,7 +158,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>14</td>
-      <td>=</td>
       <td>Ángel_Gutiérrez</td>
       <td>12</td>
       <td>4</td>
@@ -171,7 +166,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>15</td>
-      <td>=</td>
       <td>Javier_Sánchez_Moreno</td>
       <td>12</td>
       <td>2</td>
@@ -180,7 +174,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>16</td>
-      <td><span style="color:#00ff00">↑1</span></td>
       <td>Alejandro_Sánchez</td>
       <td>12</td>
       <td>4</td>
@@ -189,7 +182,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>17</td>
-      <td><span style="color:#00ff00">↑1</span></td>
       <td>Alberto_Gay</td>
       <td>12</td>
       <td>2</td>
@@ -198,7 +190,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>18</td>
-      <td><span style="color:#ff4d4d">↓2</span></td>
       <td>Javier_García</td>
       <td>10</td>
       <td>6</td>
@@ -207,7 +198,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>19</td>
-      <td><span style="color:#00ff00">↑2</span></td>
       <td>Javier_Leton</td>
       <td>13</td>
       <td>3</td>
@@ -216,7 +206,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>20</td>
-      <td><span style="color:#ff4d4d">↓1</span></td>
       <td>Sergio_Fernandez</td>
       <td>8</td>
       <td>3</td>
@@ -225,7 +214,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>21</td>
-      <td><span style="color:#ff4d4d">↓1</span></td>
       <td>Raúl_Canabal</td>
       <td>11</td>
       <td>2</td>
@@ -234,7 +222,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>22</td>
-      <td><span style="color:#00ff00">↑2</span></td>
       <td>Óscar_Espinosa</td>
       <td>11</td>
       <td>5</td>
@@ -243,7 +230,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>23</td>
-      <td><span style="color:#ff4d4d">↓1</span></td>
       <td>Ruth_Galvin</td>
       <td>11</td>
       <td>5</td>
@@ -252,7 +238,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>24</td>
-      <td><span style="color:#ff4d4d">↓1</span></td>
       <td>Cristian_Luque</td>
       <td>9</td>
       <td>2</td>
@@ -261,7 +246,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>25</td>
-      <td>=</td>
       <td>Jesús_García</td>
       <td>13</td>
       <td>1</td>
@@ -270,7 +254,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>26</td>
-      <td>=</td>
       <td>Miguel_Lara_Cantón</td>
       <td>13</td>
       <td>2</td>
@@ -279,7 +262,6 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
     <tr>
       <td>27</td>
-      <td>=</td>
       <td>Juan_Carlos_Ruiz</td>
       <td>12</td>
       <td>2</td>
@@ -288,150 +270,8 @@ tbody tr:nth-of-type(n+4) td:last-child { font-weight:bold; color:#00ffcc; }
     </tr>
   </tbody>
 </table>
-<div class="evo">
-  <h2>📈 Evolución de la clasificación</h2>
-  <p class="sub">Pulsa un nombre para ocultar o mostrar su línea</p>
-  <div class="controls" id="evoCtrl">
-    <button data-mode="pts" class="on">Puntos</button>
-    <button data-mode="rank">Posición</button>
-    <button id="evoAll" class="ghost">Mostrar todos</button>
-    <button id="evoNone" class="ghost">Ocultar todos</button>
-  </div>
-  <div class="chartwrap" id="evoWrap">
-    <svg id="evoSvg" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet"></svg>
-    <div class="tip" id="evoTip"></div>
-  </div>
-  <div class="legend" id="evoLegend"></div>
-  <p class="hint">Top 3 en oro · plata · bronce. El resto, un color por persona.</p>
-</div>
-<script>
-(function(){
-  const EMBED = {"md": [1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 14, 16, 17, 19, 20, 21, 22, 24, 26, 28, 32, 33], "players": [["David Cabesa", [1, 1, 6, 6, 6, 6, 7, 10, 10, 11, 16, 19, 24, 28, 31, 31, 34, 44, 50, 56, 59, 60]], ["Mario Redondo Carrasco", [1, 1, 6, 6, 6, 6, 7, 8, 13, 14, 19, 19, 22, 24, 25, 25, 26, 36, 42, 44, 53, 54]], ["Noel Olivares", [5, 5, 10, 11, 11, 16, 17, 18, 21, 22, 22, 25, 28, 30, 31, 31, 32, 38, 44, 48, 50, 51]], ["Jorge Gamero", [0, 1, 4, 4, 7, 10, 15, 16, 21, 22, 27, 30, 33, 34, 35, 35, 36, 37, 41, 41, 48, 49]], ["Nessi Morant", [5, 5, 8, 9, 9, 14, 15, 16, 16, 17, 17, 22, 23, 29, 32, 32, 33, 39, 39, 39, 44, 45]], ["Alberto Villardón", [5, 5, 10, 11, 11, 11, 12, 13, 13, 14, 14, 14, 17, 23, 26, 26, 26, 29, 30, 34, 44, 45]], ["Álvaro Extremera", [5, 5, 10, 10, 10, 15, 20, 21, 24, 25, 30, 30, 30, 32, 32, 32, 32, 35, 36, 37, 43, 44]], ["Alberto Martin Lopez", [5, 5, 5, 6, 6, 6, 7, 8, 8, 9, 9, 9, 12, 18, 21, 21, 21, 23, 29, 33, 42, 42]], ["David De Paz", [5, 5, 5, 6, 6, 11, 12, 13, 13, 14, 14, 14, 15, 21, 24, 24, 25, 31, 31, 32, 41, 41]], ["Carlos Moreno", [0, 0, 0, 1, 1, 6, 7, 8, 11, 12, 15, 15, 18, 20, 23, 23, 26, 30, 31, 31, 40, 41]], ["Álvaro Vidal Sánchez", [5, 5, 10, 10, 10, 10, 13, 14, 19, 20, 20, 23, 24, 26, 29, 29, 29, 35, 36, 36, 39, 40]], ["Samuel Fernández Duarte", [1, 6, 6, 6, 6, 6, 7, 10, 15, 15, 15, 18, 19, 21, 22, 22, 23, 29, 35, 36, 39, 40]], ["Ángel Gutiérrez", [5, 5, 10, 10, 10, 10, 11, 12, 15, 16, 16, 19, 24, 28, 31, 31, 32, 34, 34, 35, 38, 39]], ["Alvaro Terron", [5, 5, 10, 11, 11, 11, 12, 13, 13, 13, 13, 13, 16, 22, 22, 22, 23, 24, 24, 28, 38, 39]], ["Javier Sánchez Moreno", [5, 5, 10, 11, 11, 11, 12, 13, 18, 19, 19, 19, 22, 28, 29, 29, 29, 31, 32, 33, 37, 38]], ["Alejandro Sánchez", [1, 1, 1, 2, 2, 7, 8, 9, 9, 10, 10, 10, 13, 17, 20, 20, 21, 24, 25, 26, 33, 34]], ["Javier García", [1, 4, 4, 5, 8, 11, 12, 13, 13, 13, 13, 13, 18, 20, 20, 20, 20, 26, 27, 31, 33, 33]], ["Alberto Gay", [3, 3, 8, 9, 9, 9, 10, 11, 11, 11, 11, 11, 16, 18, 19, 19, 20, 26, 27, 28, 32, 33]], ["Sergio Fernandez", [5, 5, 5, 5, 5, 8, 8, 9, 9, 10, 10, 13, 14, 15, 16, 16, 16, 17, 18, 21, 32, 32]], ["Raúl Canabal", [5, 5, 10, 11, 11, 16, 17, 20, 20, 20, 20, 20, 20, 22, 25, 25, 26, 27, 28, 29, 31, 32]], ["Javier Leton", [5, 5, 5, 6, 6, 6, 7, 8, 11, 12, 12, 12, 17, 19, 22, 22, 22, 26, 27, 28, 31, 32]], ["Ruth Galvin", [1, 1, 1, 1, 1, 1, 2, 3, 3, 4, 4, 4, 7, 15, 16, 16, 17, 21, 25, 27, 31, 31]], ["Óscar Espinosa", [1, 1, 1, 2, 2, 2, 3, 4, 4, 5, 5, 8, 8, 9, 9, 9, 10, 16, 17, 21, 30, 31]], ["Cristian Luque", [1, 1, 1, 1, 1, 4, 5, 6, 6, 6, 6, 6, 7, 13, 14, 14, 14, 15, 16, 17, 30, 30]], ["Jesús García", [1, 1, 1, 1, 1, 1, 2, 3, 3, 4, 4, 4, 4, 6, 7, 7, 7, 9, 10, 14, 25, 26]], ["Miguel Lara Cantón", [1, 1, 1, 2, 2, 7, 8, 9, 9, 9, 9, 9, 10, 14, 15, 15, 18, 20, 21, 21, 23, 24]], ["Juan Carlos Ruiz", [1, 1, 6, 7, 7, 7, 8, 9, 9, 9, 9, 12, 13, 15, 15, 15, 18, 19, 20, 22, 23, 23]]]};
-  const PODIUM = ["#FFD700","#C0C0C0","#CD7F32"];
-  const PAL = ["#36e0b0","#56a8ff","#ff7eb6","#c79bff","#8ee65a","#ffa24d","#4fd6e6","#ff9bcb","#a9e34b","#b394ff","#39d3e0","#ffc14d","#8ea2ff","#7bd88f","#d6a0ff","#5bc8ff","#ff8a80","#c0e060","#74b9ff","#ff85b3","#7fe0d4","#e0e060","#aab4bd","#cdb0ff"];
-  const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[_\s]+/g,' ').trim().toLowerCase();
 
-  let MD = EMBED.md.slice();
-  let players = EMBED.players.map(p=>({name:p[0], pts:p[1].slice()}));
+<div class='partidos'><h2>📅 Próximos partidos</h2><div class='partido'><h3>República Checa vs México</h3><p><b>Alberto_Gay:</b> 0-1.0</p><p><b>Alberto_Martin_Lopez:</b> 1-1.0</p><p><b>Alberto_Villardón:</b> 1-2.0</p><p><b>Alejandro_Sánchez:</b> 2-1.0</p><p><b>Alvaro_Terron:</b> 0-2.0</p><p><b>Carlos_Moreno:</b> 0-0.0</p><p><b>Cristian_Luque:</b> 0-2.0</p><p><b>David_Cabesa:</b> 0-2.0</p><p><b>David_De_Paz:</b> 1-2.0</p><p><b>Javier_García:</b> 1-2.0</p><p><b>Javier_Leton:</b> 0-1.0</p><p><b>Javier_Sánchez_Moreno:</b> 2-1.0</p><p><b>Jesús_García:</b> 1-1.0</p><p><b>Jorge_Gamero:</b> 1-1.0</p><p><b>Juan_Carlos_Ruiz:</b> 1-2.0</p><p><b>Mario_Redondo_Carrasco:</b> 0-0.0</p><p><b>Miguel_Lara_Cantón:</b> 1-2.0</p><p><b>Nessi_Morant:</b> 1-2.0</p><p><b>Noel_Olivares:</b> 0-0.0</p><p><b>Raúl_Canabal:</b> 0-2.0</p><p><b>Ruth_Galvin:</b> 1-1.0</p><p><b>Samuel_Fernández_Duarte:</b> 1-3.0</p><p><b>Sergio_Fernandez:</b> 0-1.0</p><p><b>Álvaro_Extremera:</b> 1-2.0</p><p><b>Álvaro_Vidal_Sánchez:</b> 1-1.0</p><p><b>Ángel_Gutiérrez:</b> 0-0.0</p><p><b>Óscar_Espinosa:</b> 1-1.0</p></div><div class='partido'><h3>Sudáfrica vs Corea del Sur</h3><p><b>Alberto_Gay:</b> 2-1.0</p><p><b>Alberto_Martin_Lopez:</b> 0-1.0</p><p><b>Alberto_Villardón:</b> 0-1.0</p><p><b>Alejandro_Sánchez:</b> 0-2.0</p><p><b>Alvaro_Terron:</b> 0-2.0</p><p><b>Carlos_Moreno:</b> 0-1.0</p><p><b>Cristian_Luque:</b> 1-2.0</p><p><b>David_Cabesa:</b> 1-2.0</p><p><b>David_De_Paz:</b> 1-1.0</p><p><b>Javier_García:</b> 0-2.0</p><p><b>Javier_Leton:</b> 1-1.0</p><p><b>Javier_Sánchez_Moreno:</b> 0-1.0</p><p><b>Jesús_García:</b> 1-1.0</p><p><b>Jorge_Gamero:</b> 1-3.0</p><p><b>Juan_Carlos_Ruiz:</b> 1-2.0</p><p><b>Mario_Redondo_Carrasco:</b> 0-1.0</p><p><b>Miguel_Lara_Cantón:</b> 3-2.0</p><p><b>Nessi_Morant:</b> 1-2.0</p><p><b>Noel_Olivares:</b> 0-2.0</p><p><b>Raúl_Canabal:</b> 0-2.0</p><p><b>Ruth_Galvin:</b> 0-2.0</p><p><b>Samuel_Fernández_Duarte:</b> 1-2.0</p><p><b>Sergio_Fernandez:</b> 0-1.0</p><p><b>Álvaro_Extremera:</b> 0-2.0</p><p><b>Álvaro_Vidal_Sánchez:</b> 0-3.0</p><p><b>Ángel_Gutiérrez:</b> 0-2.0</p><p><b>Óscar_Espinosa:</b> 0-0.0</p></div><div class='partido'><h3>Suiza vs Canadá</h3><p><b>Alberto_Gay:</b> 0-0.0</p><p><b>Alberto_Martin_Lopez:</b> 1-1.0</p><p><b>Alberto_Villardón:</b> 2-1.0</p><p><b>Alejandro_Sánchez:</b> 0-0.0</p><p><b>Alvaro_Terron:</b> 1-0.0</p><p><b>Carlos_Moreno:</b> 2-1.0</p><p><b>Cristian_Luque:</b> 1-1.0</p><p><b>David_Cabesa:</b> 2-2.0</p><p><b>David_De_Paz:</b> 1-1.0</p><p><b>Javier_García:</b> 2-2.0</p><p><b>Javier_Leton:</b> 1-0.0</p><p><b>Javier_Sánchez_Moreno:</b> 2-1.0</p><p><b>Jesús_García:</b> 1-1.0</p><p><b>Jorge_Gamero:</b> 2-1.0</p><p><b>Juan_Carlos_Ruiz:</b> 1-1.0</p><p><b>Mario_Redondo_Carrasco:</b> 2-2.0</p><p><b>Miguel_Lara_Cantón:</b> 2-0.0</p><p><b>Nessi_Morant:</b> 2-1.0</p><p><b>Noel_Olivares:</b> 0-0.0</p><p><b>Raúl_Canabal:</b> 2-0.0</p><p><b>Ruth_Galvin:</b> 1-1.0</p><p><b>Samuel_Fernández_Duarte:</b> 2-2.0</p><p><b>Sergio_Fernandez:</b> 1-0.0</p><p><b>Álvaro_Extremera:</b> 2-1.0</p><p><b>Álvaro_Vidal_Sánchez:</b> 3-1.0</p><p><b>Ángel_Gutiérrez:</b> 1-1.0</p><p><b>Óscar_Espinosa:</b> 0-0.0</p></div></div>
 
-  // ---- fusionar con la tabla de esta misma pagina (ultima jornada) ----
-  try{
-    const t = document.querySelector('table');
-    if(t){
-      const heads=[...t.querySelectorAll('thead th, thead td')].map(x=>norm(x.textContent));
-      let iN=heads.indexOf('participante'); if(iN<0) iN=2;
-      let iT=heads.indexOf('totales'); if(iT<0) iT=heads.length-1;
-      const tot={};
-      t.querySelectorAll('tbody tr').forEach(tr=>{const c=tr.querySelectorAll('td');
-        if(c.length>iT){const n=c[iN].textContent.trim(); const p=parseInt(c[iT].textContent.trim(),10);
-          if(n && !isNaN(p)) tot[norm(n)]={name:n,pts:p};}});
-      const mm=(document.body.textContent.match(/Partidos?\s+jugados?\s*:?\s*(\d+)/i));
-      const liveMd = mm?parseInt(mm[1],10):null;
-      if(liveMd && Object.keys(tot).length){
-        const by={}; players.forEach(p=>by[norm(p.name)]=p);
-        if(MD[MD.length-1]===liveMd){
-          players.forEach(p=>{const l=tot[norm(p.name)]; if(l) p.pts[p.pts.length-1]=l.pts;});
-        } else if(liveMd>MD[MD.length-1]){
-          MD.push(liveMd);
-          players.forEach(p=>{const l=tot[norm(p.name)]; p.pts.push(l?l.pts:p.pts[p.pts.length-1]);});
-          Object.values(tot).forEach(l=>{ if(!by[norm(l.name)]){const a=new Array(MD.length-1).fill(null);a.push(l.pts);players.push({name:l.name,pts:a});}});
-        }
-      }
-    }
-  }catch(e){}
-
-  // ---- orden por total actual (fijo, no se mueve al ocultar) ----
-  const last = MD.length-1;
-  players.sort((a,b)=>(b.pts[last]||0)-(a.pts[last]||0));
-  const DATA = players.map((p,i)=>({name:p.name, pts:p.pts, color:i<3?PODIUM[i]:PAL[(i-3)%PAL.length]}));
-  const N = DATA.length;
-  const maxPts = Math.max(1,...DATA.map(d=>Math.max(...d.pts.filter(v=>v!=null))));
-  const minMD=MD[0], maxMD=MD[MD.length-1];
-  const ranks = MD.map((_,s)=>{const arr=DATA.map((d,i)=>({i,p:d.pts[s]==null?-1:d.pts[s]})).sort((a,b)=>b.p-a.p);const r={};arr.forEach((o,k)=>r[o.i]=k+1);return r;});
-
-  const NS="http://www.w3.org/2000/svg";
-  const W=900,H=520,M={t:20,r:24,b:38,l:42}, ix=W-M.l-M.r, iy=H-M.t-M.b;
-  const X=md=>M.l+(md-minMD)/Math.max(1,maxMD-minMD)*ix;
-  const Yp=p=>M.t+iy-(p/maxPts)*iy;
-  const Yr=r=>M.t+((r-1)/Math.max(1,N-1))*iy;
-  const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
-
-  const svg=document.getElementById('evoSvg');
-  const legend=document.getElementById('evoLegend');
-  const tip=document.getElementById('evoTip');
-  const wrap=document.getElementById('evoWrap');
-  let mode='pts', hidden=new Set(), hover=null;
-
-  function draw(){
-    svg.innerHTML="";
-    if(mode==='pts'){
-      const step=maxPts>30?10:5;
-      for(let g=0;g<=maxPts;g+=step){const y=Yp(g);
-        svg.appendChild(el('line',{x1:M.l,y1:y,x2:W-M.r,y2:y,stroke:'#333','stroke-width':1}));
-        svg.appendChild(el('text',{x:M.l-7,y:y+4,fill:'#888','font-size':11,'text-anchor':'end','font-family':'Arial'})).textContent=g;}
-    } else {
-      [1,5,10,15,20,N].forEach(r=>{const y=Yr(r);
-        svg.appendChild(el('line',{x1:M.l,y1:y,x2:W-M.r,y2:y,stroke:'#333','stroke-width':1}));
-        svg.appendChild(el('text',{x:M.l-7,y:y+4,fill:'#888','font-size':11,'text-anchor':'end','font-family':'Arial'})).textContent=r+'º';});
-    }
-    MD.forEach(md=>svg.appendChild(el('text',{x:X(md),y:H-15,fill:'#888','font-size':11,'text-anchor':'middle','font-family':'Arial'})).textContent=md);
-    svg.appendChild(el('text',{x:M.l+ix/2,y:H-2,fill:'#666','font-size':10,'text-anchor':'middle','font-family':'Arial','letter-spacing':2})).textContent='JORNADA';
-
-    const order=DATA.map((_,i)=>i).filter(i=>!hidden.has(i)).sort((a,b)=>{
-      const aa=a===hover,ab=b===hover; if(aa!==ab) return aa?1:-1;
-      return ranks[last][b]-ranks[last][a];});
-
-    order.forEach(i=>{
-      const d=DATA[i], isH=hover===i, anyH=hover!==null, lead=i<3;
-      let p="";
-      MD.forEach((md,s)=>{ if(d.pts[s]==null) return;
-        const x=X(md), y=mode==='pts'?Yp(d.pts[s]):Yr(ranks[s][i]);
-        p+=(p?"L":"M")+x.toFixed(1)+" "+y.toFixed(1)+" ";});
-      const op=anyH?(isH?1:.12):(lead?.95:.62);
-      const w=isH?4:(lead?3:1.7);
-      const path=el('path',{d:p,fill:'none',stroke:d.color,'stroke-width':w,'stroke-linejoin':'round','stroke-linecap':'round',opacity:op});
-      path.style.cursor='pointer';
-      path.addEventListener('mouseenter',()=>{hover=i;draw();});
-      path.addEventListener('mouseleave',()=>{hover=null;draw();});
-      svg.appendChild(path);
-      if(isH){
-        MD.forEach((md,s)=>{ if(d.pts[s]==null) return;
-          const x=X(md), y=mode==='pts'?Yp(d.pts[s]):Yr(ranks[s][i]);
-          const c=el('circle',{cx:x,cy:y,r:3.4,fill:'#111',stroke:d.color,'stroke-width':2.2});
-          c.addEventListener('mousemove',ev=>showTip(ev,d.name,mode==='pts'?d.pts[s]+' pts':ranks[s][i]+'º',md));
-          c.addEventListener('mouseleave',hideTip); svg.appendChild(c);});
-        let ls=MD.length-1; while(ls>0&&d.pts[ls]==null) ls--;
-        const lx=X(MD[ls]), ly=mode==='pts'?Yp(d.pts[ls]):Yr(ranks[ls][i]);
-        svg.appendChild(el('text',{x:lx-6,y:ly-8,fill:d.color,'font-size':12,'text-anchor':'end','font-family':'Arial','font-weight':'bold'})).textContent=d.name;
-      }
-    });
-  }
-  function showTip(ev,name,val,md){const r=wrap.getBoundingClientRect();
-    tip.innerHTML=name+' · J'+md+' · <b style="color:#00ffcc">'+val+'</b>';
-    tip.style.left=(ev.clientX-r.left+12)+'px'; tip.style.top=(ev.clientY-r.top-10)+'px'; tip.style.opacity=1;}
-  function hideTip(){tip.style.opacity=0;}
-
-  function buildLegend(){
-    legend.innerHTML="";
-    DATA.forEach((d,i)=>{
-      const last2=d.pts.filter(v=>v!=null).slice(-1)[0];
-      const chip=document.createElement('div'); chip.className='chip'+(hidden.has(i)?' off':'');
-      chip.innerHTML='<span class="sw" style="background:'+d.color+'"></span><span class="pn">'+(i+1)+'. '+d.name+'</span><span class="pp">'+last2+'</span>';
-      chip.addEventListener('click',()=>{ if(hidden.has(i)) hidden.delete(i); else hidden.add(i); chip.classList.toggle('off'); hover=null; draw(); });
-      chip.addEventListener('mouseenter',()=>{ if(!hidden.has(i)){hover=i;draw();} });
-      chip.addEventListener('mouseleave',()=>{ hover=null; draw(); });
-      legend.appendChild(chip);
-    });
-  }
-  document.getElementById('evoCtrl').addEventListener('click',e=>{
-    if(e.target.dataset.mode){ mode=e.target.dataset.mode;
-      document.querySelectorAll('#evoCtrl [data-mode]').forEach(b=>b.classList.toggle('on',b===e.target)); draw(); }
-  });
-  document.getElementById('evoAll').addEventListener('click',()=>{hidden.clear();buildLegend();draw();});
-  document.getElementById('evoNone').addEventListener('click',()=>{hidden=new Set(DATA.map((_,i)=>i));buildLegend();draw();});
-
-  buildLegend(); draw();
-})();
-</script>
-</body></html>
-<!-- update 1781981936.413283 -->
+</body>
+</html>
