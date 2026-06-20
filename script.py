@@ -136,11 +136,11 @@ def main():
     df = pd.DataFrame(ranking).sort_values("Totales", ascending=False).reset_index(drop=True)
     df.insert(0, "Posición", df.index + 1)
 
-    # ✅ guardar clasificación anterior EN MEMORIA (clave)
+    # ✅ copiar ranking (memoria)
     clasificacion_anterior = df[["Participante", "Posición"]].copy()
 
     # ======================
-    # EVOLUCIÓN (CORRECTA)
+    # EVOLUCIÓN
     # ======================
 
     evolucion = []
@@ -191,16 +191,11 @@ def main():
 <meta charset="UTF-8">
 
 <style>
-
 body {{
     background:#111;
     color:#fff;
     font-family:Arial;
     text-align:center;
-}}
-
-h1 {{
-    margin-top:20px;
 }}
 
 table {{
@@ -209,7 +204,6 @@ table {{
     width:80%;
     background:#181818;
     border-radius:10px;
-    overflow:hidden;
 }}
 
 th {{
@@ -271,12 +265,22 @@ td:nth-child(3) {{
 .partido h3 {{
     color:#00ffcc;
 }}
-
 </style>
 
 </head>
 
 <body>
+
+<h1>🏆 Clasificación Porra Mundial</h1>
+
+<p>Actualizado: {now}</p>
+
+{html_table}
+
+{partidos_html}
+
+</body>
+</html>
 """
 
     with open(HTML_SALIDA, "w", encoding="utf-8") as f:
