@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 import json
 from datetime import datetime
+import subprocess
 
 # ======================
 # CONFIG
@@ -18,7 +19,6 @@ HTML_SALIDA = "index.html"
 # ======================
 
 def puntuar(maestro, jugador):
-
     total, g, d, e = 0, 0, 0, 0
 
     partidos = maestro[(maestro["ID"] >= 1) & (maestro["ID"] <= 104)]
@@ -47,52 +47,42 @@ def puntuar(maestro, jugador):
             continue
 
         if gl_r == gl_a and gv_r == gv_a:
-            total += 5
-            e += 1
+            total += 5; e += 1
         elif (gl_r - gv_r) == (gl_a - gv_a):
-            total += 3
-            d += 1
+            total += 3; d += 1
         else:
-            total += 1
-            g += 1
+            total += 1; g += 1
 
     return total, g, d, e
 
 
 # ======================
-# ✅ PARTIDOS DEL DÍA (definitivo)
+# PARTIDOS DEL DÍA
 # ======================
+
 def partidos_hoy_predicciones(maestro):
 
-    # ✅ fechas bien parseadas
     maestro["Fecha"] = pd.to_datetime(maestro["Fecha"], dayfirst=True, errors="coerce")
-
-    # ✅ horas bien parseadas (CLAVE)
     maestro["Hora"] = pd.to_datetime(maestro["Hora"], format="%H:%M", errors="coerce")
 
     hoy = datetime.now().date()
 
-    # ✅ filtro correcto + ORDEN POR HORA
     partidos = maestro[
         maestro["Fecha"].dt.date == hoy
     ].sort_values("Hora")
 
-    # ✅ fallback de seguridad (no rompe nada)
     if partidos.empty:
         partidos = maestro[maestro["JUGADO"] != 1].head(3)
 
-    html = "<div class='partidos'>"
-    html += "<h2>📅 Partidos de hoy</h2>"
+    html = "<div class='partidos'><h2>📅 Partidos de hoy</h2>"
 
     for _, partido in partidos.iterrows():
 
-        # ✅ mostrar hora bonita
         hora_txt = ""
         if pd.notna(partido["Hora"]):
             hora_txt = partido["Hora"].strftime("%H:%M")
 
-        html += "<div class='partido'>"
-        html += f"<h3>{hora_txt} - {partido['LOCAL']} vs {partido['VISITANTE']}</h3>"
+        html += f"<div class='partido'><h3>{hora_txt} - {partido['LOCAL']} vs {partido['VISITANTE']}</h3>"
 
         for archivo in RUTA_PARTICIPANTES.glob("*.xlsx"):
 
@@ -103,7 +93,6 @@ def partidos_hoy_predicciones(maestro):
             jugador = pd.read_excel(archivo, sheet_name="Datos")
 
             fila = jugador[jugador["ID"] == partido["ID"]]
-
             if fila.empty:
                 continue
 
@@ -117,13 +106,13 @@ def partidos_hoy_predicciones(maestro):
         html += "</div>"
 
     html += "</div>"
-
     return html
 
 
 # ======================
 # MAIN
 # ======================
+
 def main():
 
     maestro = pd.read_excel(RUTA_MAESTRO, sheet_name="Datos")
@@ -151,22 +140,17 @@ def main():
     df.insert(0, "Posición", df.index + 1)
 
     # ======================
-    # EVOLUCIÓN POSICIONES
+    # EVOLUCIÓN
     # ======================
 
-if os.path.exists("historico.json"):
-    try:
-        with open("historico.json", "r", encoding="utf-8") as f:
-            anterior = json.load(f)
-    except:
+    if os.path.exists("historico.json"):
         try:
-            with open("historico.json", "r", encoding="utf-8-sig") as f:
+            with open("historico.json", "r", encoding="utf-8") as f:
                 anterior = json.load(f)
         except:
-            with open("historico.json", "r", encoding="latin-1") as f:
-                anterior = json.load(f)
-else:
-    anterior = {}
+            anterior = {}
+    else:
+        anterior = {}
 
     evolucion = []
 
@@ -190,26 +174,27 @@ else:
 
     df["Evolución"] = evolucion
 
-    # guardar clasificación actual
+    # ✅ GUARDAR HISTÓRICO (ARREGLADO)
     nuevo_hist = {
         row["Participante"]: int(row["Posición"])
         for _, row in df.iterrows()
     }
 
-    with open("historico.json", "r", encoding="utf-8") as f:
-        anterior = json.load(f)
+    with open("historico.json", "w", encoding="utf-8") as f:
+        json.dump(nuevo_hist, f, ensure_ascii=False)
 
     df.to_excel(SALIDA, index=False)
 
+    # ✅ ORDEN CORRECTO (ARREGLADO)
     df = df[[
-    "Posición",
-    "Participante",
-    "Evolución",
-    "Signo",
-    "Diferencia",
-    "Exactos",
-    "Totales"
-]]
+        "Posición",
+        "Participante",
+        "Evolución",
+        "Signo",
+        "Diferencia",
+        "Exactos",
+        "Totales"
+    ]]
 
     html_table = df.to_html(index=False, escape=False)
     partidos_html = partidos_hoy_predicciones(maestro)
@@ -218,109 +203,35 @@ else:
 
     html = f"""
 <html>
-<head>
-<meta charset="UTF-8">
-
-<style>
-body {{
-    background:#111;
-    color:#fff;
-    font-family:Arial;
-    text-align:center;
-}}
-
-table {{
-    margin:20px auto;
-    border-collapse:collapse;
-    width:80%;
-}}
-
-th, td {{
-    padding:10px;
-    border-bottom:1px solid #444;
-}}
-
-th {{
-    background:#222;
-}}
-
-tbody tr:nth-of-type(1) {{
-    background:gold;
-    color:#000;
-}}
-
-tbody tr:nth-of-type(2) {{
-    background:silver;
-    color:#000;
-}}
-
-tbody tr:nth-of-type(3) {{
-    background:#cd7f32;
-    color:#000;
-}}
-
-
-tbody tr:nth-of-type(4) {{
-    background:#66bb6a;
-    color:#000;
-}}
-
-
-.partidos {{
-    max-width:900px;
-    margin:30px auto;
-    text-align:left;
-}}
-
-.partido {{
-    background:#1a1a1a;
-    padding:10px;
-    margin-bottom:15px;
-    border-radius:8px;
-}}
-
-.partido h3 {{
-    color:#00ffcc;
-}}
-</style>
-
-</head>
-
+<head><meta charset="UTF-8"></head>
 <body>
-
 <h1>🏆 Clasificación Porra Mundial</h1>
-
 <p>Actualizado: {now}</p>
-
 {html_table}
-
 {partidos_html}
-
 </body>
 </html>
 """
+
     with open(HTML_SALIDA, "w", encoding="utf-8") as f:
         f.write(html)
 
     print("✅ TODO OK")
 
-import subprocess
+
+# ======================
+# GIT AUTO
+# ======================
 
 def push_git():
     try:
         subprocess.run(["git", "add", "."], check=True)
-
-        subprocess.run(
-            ["git", "commit", "-m", "auto update"],
-            check=False
-        )
-
+        subprocess.run(["git", "commit", "-m", "auto update"], check=False)
         subprocess.run(["git", "push"], check=True)
-
         print("✅ Repo actualizado automáticamente")
-
     except Exception as e:
         print(f"⚠️ Error en git: {e}")
+
 
 if __name__ == "__main__":
     main()
