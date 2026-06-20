@@ -164,7 +164,7 @@ def main():
             elif diff < 0:
                 evolucion.append(f"<span style='color:#ff4d4d'>⬇️ -{abs(diff)}</span>")
             else:
-                evolucion.append(f"<span style='color:#cccccc'>➡️ 0</span>")
+                evolucion.append(f"<span style='color:#bdc3c7'>=</span>")
 
 
     df["Evolución"] = evolucion
