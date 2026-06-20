@@ -150,7 +150,66 @@ def main():
     df = pd.DataFrame(ranking).sort_values("Totales", ascending=False).reset_index(drop=True)
     df.insert(0, "Posición", df.index + 1)
 
+    # ======================
+    # EVOLUCIÓN POSICIONES
+    # ======================
+
+if os.path.exists("historico.json"):
+    try:
+        with open("historico.json", "r", encoding="utf-8") as f:
+            anterior = json.load(f)
+    except:
+        try:
+            with open("historico.json", "r", encoding="utf-8-sig") as f:
+                anterior = json.load(f)
+        except:
+            with open("historico.json", "r", encoding="latin-1") as f:
+                anterior = json.load(f)
+else:
+    anterior = {}
+
+    evolucion = []
+
+    for _, row in df.iterrows():
+        nombre = row["Participante"]
+        pos_actual = row["Posición"]
+
+        pos_anterior = anterior.get(nombre)
+
+        if pos_anterior is None:
+            evolucion.append("🆕")
+        else:
+            diff = pos_anterior - pos_actual
+
+            if diff > 0:
+                evolucion.append(f"⬆️ {diff}")
+            elif diff < 0:
+                evolucion.append(f"⬇️ {abs(diff)}")
+            else:
+                evolucion.append("➡️")
+
+    df["Evolución"] = evolucion
+
+    # guardar clasificación actual
+    nuevo_hist = {
+        row["Participante"]: int(row["Posición"])
+        for _, row in df.iterrows()
+    }
+
+    with open("historico.json", "r", encoding="utf-8") as f:
+        anterior = json.load(f)
+
     df.to_excel(SALIDA, index=False)
+
+    df = df[[
+    "Posición",
+    "Participante",
+    "Evolución",
+    "Signo",
+    "Diferencia",
+    "Exactos",
+    "Totales"
+]]
 
     html_table = df.to_html(index=False, escape=False)
     partidos_html = partidos_hoy_predicciones(maestro)
