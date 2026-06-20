@@ -212,9 +212,10 @@ th {{
     padding:12px;
 }}
 
-td {{
+th, td {{
     padding:10px;
     border-bottom:1px solid #333;
+    text-align:center;
 }}
 
 tr:hover {{
