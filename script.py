@@ -19,6 +19,7 @@ HTML_SALIDA = "index.html"
 # ======================
 
 def puntuar(maestro, jugador):
+
     total, g, d, e = 0, 0, 0, 0
 
     partidos = maestro[(maestro["ID"] >= 1) & (maestro["ID"] <= 104)]
@@ -55,10 +56,6 @@ def puntuar(maestro, jugador):
 
     return total, g, d, e
 
-
-# ======================
-# PARTIDOS DEL DÍA
-# ======================
 
 def partidos_hoy_predicciones(maestro):
 
@@ -139,18 +136,12 @@ def main():
     df = pd.DataFrame(ranking).sort_values("Totales", ascending=False).reset_index(drop=True)
     df.insert(0, "Posición", df.index + 1)
 
-    # ======================
-    # EVOLUCIÓN
-    # ======================
+    # ✅ guardar clasificación anterior EN MEMORIA (clave)
+    clasificacion_anterior = df[["Participante", "Posición"]].copy()
 
-    if os.path.exists("historico.json"):
-        try:
-            with open("historico.json", "r", encoding="utf-8") as f:
-                anterior = json.load(f)
-        except:
-            anterior = {}
-    else:
-        anterior = {}
+    # ======================
+    # EVOLUCIÓN (CORRECTA)
+    # ======================
 
     evolucion = []
 
@@ -158,11 +149,14 @@ def main():
         nombre = row["Participante"]
         pos_actual = row["Posición"]
 
-        pos_anterior = anterior.get(nombre)
+        fila_ant = clasificacion_anterior[
+            clasificacion_anterior["Participante"] == nombre
+        ]
 
-        if pos_anterior is None:
-            evolucion.append("🆕")
+        if fila_ant.empty:
+            evolucion.append("")
         else:
+            pos_anterior = int(fila_ant.iloc[0]["Posición"])
             diff = pos_anterior - pos_actual
 
             if diff > 0:
@@ -174,18 +168,8 @@ def main():
 
     df["Evolución"] = evolucion
 
-    # ✅ GUARDAR HISTÓRICO (ARREGLADO)
-    nuevo_hist = {
-        row["Participante"]: int(row["Posición"])
-        for _, row in df.iterrows()
-    }
-
-    with open("historico.json", "w", encoding="utf-8") as f:
-        json.dump(nuevo_hist, f, ensure_ascii=False)
-
     df.to_excel(SALIDA, index=False)
 
-    # ✅ ORDEN CORRECTO (ARREGLADO)
     df = df[[
         "Posición",
         "Participante",
@@ -203,12 +187,20 @@ def main():
 
     html = f"""
 <html>
-<head><meta charset="UTF-8"></head>
+<head>
+<meta charset="UTF-8">
+</head>
+
 <body>
+
 <h1>🏆 Clasificación Porra Mundial</h1>
+
 <p>Actualizado: {now}</p>
+
 {html_table}
+
 {partidos_html}
+
 </body>
 </html>
 """
