@@ -160,11 +160,12 @@ def main():
             diff = pos_anterior - pos_actual
 
             if diff > 0:
-                evolucion.append(f"⬆️ {diff}")
+                evolucion.append(f"<span style='color:#00ff00'>⬆️ +{diff}</span>")
             elif diff < 0:
-                evolucion.append(f"⬇️ {abs(diff)}")
+                evolucion.append(f"<span style='color:#ff4d4d'>⬇️ -{abs(diff)}</span>")
             else:
-                evolucion.append("➡️")
+                evolucion.append(f"<span style='color:#cccccc'>➡️ 0</span>")
+
 
     df["Evolución"] = evolucion
 
