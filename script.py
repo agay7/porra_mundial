@@ -189,20 +189,94 @@ def main():
 <html>
 <head>
 <meta charset="UTF-8">
+
+<style>
+
+body {{
+    background:#111;
+    color:#fff;
+    font-family:Arial;
+    text-align:center;
+}}
+
+h1 {{
+    margin-top:20px;
+}}
+
+table {{
+    margin:30px auto;
+    border-collapse:collapse;
+    width:80%;
+    background:#181818;
+    border-radius:10px;
+    overflow:hidden;
+}}
+
+th {{
+    background:#222;
+    color:#fff;
+    padding:12px;
+}}
+
+td {{
+    padding:10px;
+    border-bottom:1px solid #333;
+}}
+
+tr:hover {{
+    background:#2a2a2a;
+}}
+
+tbody tr:nth-of-type(1) {{
+    background:gold;
+    color:#000;
+    font-weight:bold;
+}}
+
+tbody tr:nth-of-type(2) {{
+    background:silver;
+    color:#000;
+    font-weight:bold;
+}}
+
+tbody tr:nth-of-type(3) {{
+    background:#cd7f32;
+    color:#000;
+    font-weight:bold;
+}}
+
+tbody tr:nth-of-type(4) {{
+    background:#4caf50;
+    color:#000;
+    font-weight:bold;
+}}
+
+td:nth-child(3) {{
+    font-weight:bold;
+}}
+
+.partidos {{
+    max-width:900px;
+    margin:40px auto;
+    text-align:left;
+}}
+
+.partido {{
+    background:#1a1a1a;
+    padding:12px;
+    margin-bottom:15px;
+    border-radius:8px;
+}}
+
+.partido h3 {{
+    color:#00ffcc;
+}}
+
+</style>
+
 </head>
 
 <body>
-
-<h1>🏆 Clasificación Porra Mundial</h1>
-
-<p>Actualizado: {now}</p>
-
-{html_table}
-
-{partidos_html}
-
-</body>
-</html>
 """
 
     with open(HTML_SALIDA, "w", encoding="utf-8") as f:
