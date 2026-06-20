@@ -245,6 +245,24 @@ tbody tr:nth-of-type(4) {{
 
     print("✅ TODO OK")
 
+import subprocess
+
+def push_git():
+    try:
+        subprocess.run(["git", "add", "."], check=True)
+
+        subprocess.run(
+            ["git", "commit", "-m", "auto update"],
+            check=False
+        )
+
+        subprocess.run(["git", "push"], check=True)
+
+        print("✅ Repo actualizado automáticamente")
+
+    except Exception as e:
+        print(f"⚠️ Error en git: {e}")
 
 if __name__ == "__main__":
     main()
+    push_git()
