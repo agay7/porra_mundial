@@ -2,7 +2,6 @@ import pandas as pd
 from pathlib import Path
 import os
 import json
-import unicodedata
 from datetime import datetime
 
 # ======================
@@ -13,34 +12,13 @@ RUTA_PARTICIPANTES = Path("data/participantes")
 SALIDA = "clasificacion.xlsx"
 HTML_SALIDA = "index.html"
 
-P_GANADOR = 1
-P_DIFERENCIA = 3
-P_RESULTADO_EXACTO = 5
 
 # ======================
 # FUNCIONES
 # ======================
-def puntos_partido(real, apuesta):
-
-    gl_r, gv_r = real["GOLES LOCAL"], real["GOLES VISITANTE"]
-    gl_a, gv_a = apuesta["GOLES LOCAL"], apuesta["GOLES VISITANTE"]
-
-    ganador_r = 1 if gl_r > gv_r else -1 if gv_r > gl_r else 0
-    ganador_a = 1 if gl_a > gv_a else -1 if gv_a > gl_a else 0
-
-    if ganador_r != ganador_a:
-        return 0
-
-    if gl_r == gl_a and gv_r == gv_a:
-        return P_RESULTADO_EXACTO
-
-    if (gl_r - gv_r) == (gl_a - gv_a):
-        return P_DIFERENCIA
-
-    return P_GANADOR
-
 
 def puntuar(maestro, jugador):
+
     total, g, d, e = 0, 0, 0, 0
 
     partidos = maestro[(maestro["ID"] >= 1) & (maestro["ID"] <= 104)]
@@ -55,43 +33,73 @@ def puntuar(maestro, jugador):
             continue
 
         apuesta = fila.iloc[0]
-        puntos = puntos_partido(real, apuesta)
 
-        total += puntos
+        gl_r = real["GOLES LOCAL"]
+        gv_r = real["GOLES VISITANTE"]
 
-        if puntos == 5: e += 1
-        elif puntos == 3: d += 1
-        elif puntos == 1: g += 1
+        gl_a = apuesta["GOLES LOCAL"]
+        gv_a = apuesta["GOLES VISITANTE"]
+
+        ganador_r = 1 if gl_r > gv_r else -1 if gv_r > gl_r else 0
+        ganador_a = 1 if gl_a > gv_a else -1 if gv_a > gl_a else 0
+
+        if ganador_r != ganador_a:
+            continue
+
+        if gl_r == gl_a and gv_r == gv_a:
+            total += 5
+            e += 1
+        elif (gl_r - gv_r) == (gl_a - gv_a):
+            total += 3
+            d += 1
+        else:
+            total += 1
+            g += 1
 
     return total, g, d, e
 
 
-def contar_partidos_jugados(maestro):
-    partidos = maestro[(maestro["ID"] >= 1) & (maestro["ID"] <= 104)]
-    return int((partidos["JUGADO"] == 1).sum())
-
-
 # ======================
-# NUEVO BLOQUE 🔥
+# ✅ PARTIDOS DEL DÍA (definitivo)
 # ======================
 def partidos_hoy_predicciones(maestro):
 
-    partidos = maestro[(maestro["JUGADO"] != 1)].head(3)
+    # ✅ fechas bien parseadas
+    maestro["Fecha"] = pd.to_datetime(maestro["Fecha"], dayfirst=True, errors="coerce")
+
+    # ✅ horas bien parseadas (CLAVE)
+    maestro["Hora"] = pd.to_datetime(maestro["Hora"], format="%H:%M", errors="coerce")
+
+    hoy = datetime.now().date()
+
+    # ✅ filtro correcto + ORDEN POR HORA
+    partidos = maestro[
+        maestro["Fecha"].dt.date == hoy
+    ].sort_values("Hora")
+
+    # ✅ fallback de seguridad (no rompe nada)
+    if partidos.empty:
+        partidos = maestro[maestro["JUGADO"] != 1].head(3)
 
     html = "<div class='partidos'>"
-    html += "<h2>📅 Próximos partidos</h2>"
+    html += "<h2>📅 Partidos de hoy</h2>"
 
     for _, partido in partidos.iterrows():
 
+        # ✅ mostrar hora bonita
+        hora_txt = ""
+        if pd.notna(partido["Hora"]):
+            hora_txt = partido["Hora"].strftime("%H:%M")
+
         html += "<div class='partido'>"
-        html += f"<h3>{partido['LOCAL']} vs {partido['VISITANTE']}</h3>"
+        html += f"<h3>{hora_txt} - {partido['LOCAL']} vs {partido['VISITANTE']}</h3>"
 
         for archivo in RUTA_PARTICIPANTES.glob("*.xlsx"):
 
             if archivo.name.startswith("~$"):
                 continue
 
-            nombre = archivo.stem
+            nombre = archivo.stem.replace("_", " ")
             jugador = pd.read_excel(archivo, sheet_name="Datos")
 
             fila = jugador[jugador["ID"] == partido["ID"]]
@@ -101,7 +109,10 @@ def partidos_hoy_predicciones(maestro):
 
             pred = fila.iloc[0]
 
-            html += f"<p><b>{nombre}:</b> {pred['GOLES LOCAL']}-{pred['GOLES VISITANTE']}</p>"
+            gl = int(pred["GOLES LOCAL"])
+            gv = int(pred["GOLES VISITANTE"])
+
+            html += f"<p><b>{nombre}:</b> {gl}-{gv}</p>"
 
         html += "</div>"
 
@@ -111,53 +122,11 @@ def partidos_hoy_predicciones(maestro):
 
 
 # ======================
-# HISTÓRICO
-# ======================
-def _nfc(s):
-    return unicodedata.normalize("NFC", str(s))
-
-
-def actualizar_historico(df, partidos_jugados, ruta="historico.json"):
-
-    totales = {_nfc(r["Participante"]).replace("_", " ").strip(): int(r["Totales"])
-               for _, r in df.iterrows()}
-
-    if os.path.exists(ruta):
-        with open(ruta, encoding="utf-8") as f:
-            raw = json.load(f)
-    else:
-        raw = {"md": [], "players": []}
-
-    md = raw["md"]
-    players = {p[0]: p for p in raw["players"]}
-
-    if md and md[-1] == partidos_jugados:
-        for nombre, pts in totales.items():
-            if nombre in players:
-                players[nombre][1][-1] = pts
-    else:
-        md.append(partidos_jugados)
-        for nombre, pts in totales.items():
-            if nombre in players:
-                players[nombre][1].append(pts)
-            else:
-                players[nombre] = [nombre, [pts]]
-
-    hist = {"md": md, "players": list(players.values())}
-
-    with open(ruta, "w", encoding="utf-8") as f:
-        json.dump(hist, f, ensure_ascii=False)
-
-    return hist
-
-
-# ======================
 # MAIN
 # ======================
 def main():
 
     maestro = pd.read_excel(RUTA_MAESTRO, sheet_name="Datos")
-    partidos_jugados = contar_partidos_jugados(maestro)
 
     ranking = []
 
@@ -178,34 +147,65 @@ def main():
             "Totales": puntos
         })
 
-    df = pd.DataFrame(ranking).sort_values("Totales", ascending=False)
-    df.insert(0, "Posición", range(1, len(df) + 1))
+    df = pd.DataFrame(ranking).sort_values("Totales", ascending=False).reset_index(drop=True)
+    df.insert(0, "Posición", df.index + 1)
 
     df.to_excel(SALIDA, index=False)
-
-    hist = actualizar_historico(df, partidos_jugados)
 
     html_table = df.to_html(index=False, escape=False)
     partidos_html = partidos_hoy_predicciones(maestro)
 
-    # ======================
-    # HTML FINAL
-    # ======================
     now = datetime.now().strftime("%d/%m %H:%M:%S")
 
     html = f"""
 <html>
 <head>
+<meta charset="UTF-8">
+
 <style>
+body {{
+    background:#111;
+    color:#fff;
+    font-family:Arial;
+    text-align:center;
+}}
 
-body {{ background:#111; color:white; font-family:Arial; text-align:center; }}
+table {{
+    margin:20px auto;
+    border-collapse:collapse;
+    width:80%;
+}}
 
-table {{ margin:20px auto; border-collapse:collapse; }}
-th, td {{ padding:10px; border-bottom:1px solid #444; }}
+th, td {{
+    padding:10px;
+    border-bottom:1px solid #444;
+}}
 
-tbody tr:nth-of-type(1) {{ background:gold; color:black; }}
-tbody tr:nth-of-type(2) {{ background:silver; color:black; }}
-tbody tr:nth-of-type(3) {{ background:#cd7f32; color:black; }}
+th {{
+    background:#222;
+}}
+
+tbody tr:nth-of-type(1) {{
+    background:gold;
+    color:#000;
+}}
+
+tbody tr:nth-of-type(2) {{
+    background:silver;
+    color:#000;
+}}
+
+tbody tr:nth-of-type(3) {{
+    background:#cd7f32;
+    color:#000;
+}}
+
+
+tbody tr:nth-of-type(4) {{
+    background:#66bb6a;
+    color:#000;
+}}
+
 
 .partidos {{
     max-width:900px;
@@ -222,18 +222,16 @@ tbody tr:nth-of-type(3) {{ background:#cd7f32; color:black; }}
 
 .partido h3 {{
     color:#00ffcc;
-    margin-bottom:5px;
 }}
-
 </style>
+
 </head>
 
 <body>
 
-<h1>🏆 Porra Mundial</h1>
+<h1>🏆 Clasificación Porra Mundial</h1>
 
 <p>Actualizado: {now}</p>
-<p>Partidos jugados: {partidos_jugados}</p>
 
 {html_table}
 
@@ -242,13 +240,8 @@ tbody tr:nth-of-type(3) {{ background:#cd7f32; color:black; }}
 </body>
 </html>
 """
-
     with open(HTML_SALIDA, "w", encoding="utf-8") as f:
         f.write(html)
-
-    os.system("git add .")
-    os.system(f'git commit -m "update {now}"')
-    os.system("git push")
 
     print("✅ TODO OK")
 
