@@ -164,7 +164,7 @@ def main():
             elif diff < 0:
                 evolucion.append(f"<span style='color:#ff4d4d'>⬇️ -{abs(diff)}</span>")
             else:
-                evolucion.append(f"<span style='color:#bdc3c7'>=</span>")
+                evolucion.append(f"<span style='color:#ffffff; font-weight:bold'>=</span>")
 
 
     df["Evolución"] = evolucion
@@ -267,6 +267,12 @@ td:nth-child(3) {{
 .partido h3 {{
     color:#00ffcc;
 }}
+
+td:nth-child(7) {{
+    color:#00ff99;
+    font-weight:bold;
+}}
+
 </style>
 
 </head>
