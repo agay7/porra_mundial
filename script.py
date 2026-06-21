@@ -2,6 +2,7 @@ import pandas as pd
 from pathlib import Path
 import os
 import json
+import unicodedata
 from datetime import datetime
 import subprocess
 
@@ -12,6 +13,7 @@ RUTA_MAESTRO = Path("data/maestro.xlsx")
 RUTA_PARTICIPANTES = Path("data/participantes")
 SALIDA = "clasificacion.xlsx"
 HTML_SALIDA = "index.html"
+RUTA_HISTORICO = Path("historico.json")
 
 
 # ======================
@@ -55,6 +57,28 @@ def puntuar(maestro, jugador):
             total += 1; g += 1
 
     return total, g, d, e
+
+
+def cargar_historico():
+    """Lee la clasificación de la ejecución anterior desde historico.json."""
+    if RUTA_HISTORICO.exists():
+        try:
+            with open(RUTA_HISTORICO, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            # normalizamos los nombres (NFC) para evitar que un mismo nombre
+            # con tildes codificadas de forma distinta no haga "match"
+            return {unicodedata.normalize("NFC", k): v for k, v in data.items()}
+        except Exception as e:
+            print(f"⚠️ No se pudo leer historico.json: {e}")
+            return {}
+    return {}
+
+
+def guardar_historico(df):
+    """Guarda la clasificación actual en historico.json para la próxima ejecución."""
+    historico = dict(zip(df["Participante"], df["Posición"].astype(int)))
+    with open(RUTA_HISTORICO, "w", encoding="utf-8") as f:
+        json.dump(historico, f, ensure_ascii=False, indent=2)
 
 
 def partidos_hoy_predicciones(maestro):
@@ -126,7 +150,7 @@ def main():
         puntos, g, d, e = puntuar(maestro, jugador)
 
         ranking.append({
-            "Participante": archivo.stem,
+            "Participante": unicodedata.normalize("NFC", archivo.stem),
             "Signo": g,
             "Diferencia": d,
             "Exactos": e,
@@ -136,8 +160,8 @@ def main():
     df = pd.DataFrame(ranking).sort_values("Totales", ascending=False).reset_index(drop=True)
     df.insert(0, "Posición", df.index + 1)
 
-    # ✅ copiar ranking (memoria)
-    clasificacion_anterior = df[["Participante", "Posición"]].copy()
+    # 📥 clasificación de la ejecución ANTERIOR (real), leída de historico.json
+    historico_anterior = cargar_historico()
 
     # ======================
     # EVOLUCIÓN
@@ -149,14 +173,11 @@ def main():
         nombre = row["Participante"]
         pos_actual = row["Posición"]
 
-        fila_ant = clasificacion_anterior[
-            clasificacion_anterior["Participante"] == nombre
-        ]
+        pos_anterior = historico_anterior.get(nombre)
 
-        if fila_ant.empty:
+        if pos_anterior is None:
             evolucion.append("")
         else:
-            pos_anterior = int(fila_ant.iloc[0]["Posición"])
             diff = pos_anterior - pos_actual
 
             if diff > 0:
@@ -293,6 +314,10 @@ td:nth-child(7) {{
 
     with open(HTML_SALIDA, "w", encoding="utf-8") as f:
         f.write(html)
+
+    # 💾 guardar la clasificación de ESTA ejecución como histórico
+    # para que la próxima vez la evolución se calcule correctamente
+    guardar_historico(df)
 
     print("✅ TODO OK")
 
