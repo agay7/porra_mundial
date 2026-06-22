@@ -20,41 +20,135 @@ RUTA_HISTORICO = Path("historico.json")
 # FUNCIONES
 # ======================
 
+ID_GRUPOS_MAX    = 72   # IDs 1-72   → fase de grupos (equipos fijos)
+ID_ELIMINATORIA  = range(73, 105)  # IDs 73-104 → eliminatorias
+
+
 def puntuar(maestro, jugador):
 
     total, g, d, e = 0, 0, 0, 0
 
     partidos = maestro[(maestro["ID"] >= 1) & (maestro["ID"] <= 104)]
 
+    # Pre-cargamos las predicciones de eliminatoria del jugador
+    # para poder buscar equipos en otros IDs (Level 2)
+    jugador_ko = jugador[jugador["ID"].isin(ID_ELIMINATORIA)].copy()
+    jugador_ko["LOCAL"]     = jugador_ko["LOCAL"].astype(str).str.strip()
+    jugador_ko["VISITANTE"] = jugador_ko["VISITANTE"].astype(str).str.strip()
+
     for _, real in partidos.iterrows():
 
         if int(real.get("JUGADO", 0)) != 1:
             continue
 
-        fila = jugador[jugador["ID"] == real["ID"]]
+        real_id = int(real["ID"])
+        fila = jugador[jugador["ID"] == real_id]
         if fila.empty:
             continue
 
         apuesta = fila.iloc[0]
-
         gl_r = real["GOLES LOCAL"]
         gv_r = real["GOLES VISITANTE"]
-
         gl_a = apuesta["GOLES LOCAL"]
         gv_a = apuesta["GOLES VISITANTE"]
 
-        ganador_r = 1 if gl_r > gv_r else -1 if gv_r > gl_r else 0
-        ganador_a = 1 if gl_a > gv_a else -1 if gv_a > gl_a else 0
+        # =====================================================
+        # FASE DE GRUPOS (IDs 1-72): lógica original
+        # =====================================================
+        if real_id <= ID_GRUPOS_MAX:
 
-        if ganador_r != ganador_a:
-            continue
+            ganador_r = 1 if gl_r > gv_r else -1 if gv_r > gl_r else 0
+            ganador_a = 1 if gl_a > gv_a else -1 if gv_a > gl_a else 0
 
-        if gl_r == gl_a and gv_r == gv_a:
-            total += 5; e += 1
-        elif (gl_r - gv_r) == (gl_a - gv_a):
-            total += 3; d += 1
+            if ganador_r != ganador_a:
+                continue
+
+            if gl_r == gl_a and gv_r == gv_a:
+                total += 5; e += 1
+            elif (gl_r - gv_r) == (gl_a - gv_a):
+                total += 3; d += 1
+            else:
+                total += 1; g += 1
+
+        # =====================================================
+        # ELIMINATORIAS (IDs 73-104): validación de equipos
+        # =====================================================
         else:
-            total += 1; g += 1
+
+            real_local = str(real["LOCAL"]).strip()
+            real_visit = str(real["VISITANTE"]).strip()
+            pred_local = str(apuesta["LOCAL"]).strip()
+            pred_visit = str(apuesta["VISITANTE"]).strip()
+            equipos_reales = {real_local, real_visit}
+
+            # Ganador real (tras 90' + prórroga)
+            if gl_r > gv_r:
+                winner_real = real_local
+            elif gv_r > gl_r:
+                winner_real = real_visit
+            else:
+                # Empate tras prórroga → ganador por penaltis no cambia el marcador;
+                # en este caso no se puede puntuar diferencia ni exacto
+                winner_real = None
+
+            # --- LEVEL 1: equipos acertados en el mismo ID ---
+            acertados_l1 = set()
+            if pred_local in equipos_reales:
+                acertados_l1.add(pred_local)
+            if pred_visit in equipos_reales:
+                acertados_l1.add(pred_visit)
+
+            # Detectamos si los dos equipos están pero invertidos
+            pred_invertido = (pred_local == real_visit and pred_visit == real_local)
+
+            # --- LEVEL 2: buscar equipos reales en otros IDs de eliminatoria ---
+            acertados_l2 = set()
+            for equipo in equipos_reales:
+                if equipo not in acertados_l1:
+                    encontrado = jugador_ko[
+                        (jugador_ko["ID"] != real_id) &
+                        (
+                            (jugador_ko["LOCAL"]     == equipo) |
+                            (jugador_ko["VISITANTE"] == equipo)
+                        )
+                    ]
+                    if not encontrado.empty:
+                        acertados_l2.add(equipo)
+
+            acertados = acertados_l1 | acertados_l2
+
+            # Si no acertó ningún equipo real → 0 puntos
+            if not acertados:
+                continue
+
+            # Ganador predicho desde la apuesta del mismo ID
+            if gl_a > gv_a:
+                winner_pred = pred_local
+            elif gv_a > gl_a:
+                winner_pred = pred_visit
+            else:
+                winner_pred = None
+
+            # ¿El ganador predicho (mismo ID) es el equipo ganador real?
+            if winner_pred in equipos_reales and winner_pred == winner_real:
+
+                # Acertó el ganador desde el mismo ID → puntuación completa
+                # Si los equipos estaban invertidos, normalizamos el marcador
+                if pred_invertido:
+                    gl_a, gv_a = gv_a, gl_a
+
+                if gl_r == gl_a and gv_r == gv_a:
+                    total += 5; e += 1
+                elif (gl_r - gv_r) == (gl_a - gv_a):
+                    total += 3; d += 1
+                else:
+                    total += 1; g += 1
+
+            elif winner_real in acertados_l2:
+                # El ganador real no aparece como ganador en la predicción del mismo ID,
+                # pero el participante lo predijo en algún otro cruce de eliminatoria (Level 2)
+                # → acertó que ese equipo llegaría hasta aquí → 1 punto
+                total += 1; g += 1
 
     return total, g, d, e
 
@@ -84,27 +178,52 @@ def guardar_historico(df):
 def partidos_hoy_predicciones(maestro):
 
     maestro["Fecha"] = pd.to_datetime(maestro["Fecha"], dayfirst=True, errors="coerce")
-    maestro["Hora"] = pd.to_datetime(maestro["Hora"], format="%H:%M", errors="coerce")
+    maestro["Hora"]  = pd.to_datetime(maestro["Hora"],  format="%H:%M", errors="coerce")
 
     hoy = datetime.now().date()
 
-    partidos = maestro[
-        maestro["Fecha"].dt.date == hoy
-    ].sort_values("Hora")
+    partidos = maestro[maestro["Fecha"].dt.date == hoy].sort_values("Hora")
 
     if partidos.empty:
         partidos = maestro[maestro["JUGADO"] != 1].head(3)
+
+    # Primer partido sin jugar hoy → se resalta como "próximo"
+    proximos = partidos[partidos["JUGADO"] != 1]
+    id_proximo = int(proximos.iloc[0]["ID"]) if not proximos.empty else None
 
     html = "<div class='partidos'><h2>📅 Partidos de hoy</h2>"
 
     for _, partido in partidos.iterrows():
 
-        hora_txt = ""
-        if pd.notna(partido["Hora"]):
-            hora_txt = partido["Hora"].strftime("%H:%M")
+        jugado   = int(partido.get("JUGADO", 0)) == 1
+        es_proximo = (int(partido["ID"]) == id_proximo)
 
-        html += f"<div class='partido'><h3>{hora_txt} - {partido['LOCAL']} vs {partido['VISITANTE']}</h3>"
+        hora_txt = partido["Hora"].strftime("%H:%M") if pd.notna(partido["Hora"]) else ""
 
+        # Resultado real si ya se jugó
+        if jugado:
+            gl_r = int(partido["GOLES LOCAL"])
+            gv_r = int(partido["GOLES VISITANTE"])
+            resultado_txt = (
+                f"<span class='resultado'>"
+                f"{partido['LOCAL']} <b>{gl_r} - {gv_r}</b> {partido['VISITANTE']}"
+                f"</span>"
+            )
+            ganador_r = 1 if gl_r > gv_r else -1 if gv_r > gl_r else 0
+        else:
+            resultado_txt = ""
+            ganador_r     = None
+
+        clase = "partido jugado" if jugado else ("partido proximo" if es_proximo else "partido")
+        icono = "✅" if jugado else ("🔜" if es_proximo else "🕐")
+
+        html += f"<div class='{clase}'>"
+        html += f"<h3>{icono} {hora_txt} - {partido['LOCAL']} vs {partido['VISITANTE']}</h3>"
+
+        if jugado:
+            html += f"<p class='resultado-final'>Resultado: {resultado_txt}</p>"
+
+        # Predicciones de cada participante
         for archivo in RUTA_PARTICIPANTES.glob("*.xlsx"):
 
             if archivo.name.startswith("~$"):
@@ -117,12 +236,20 @@ def partidos_hoy_predicciones(maestro):
             if fila.empty:
                 continue
 
-            pred = fila.iloc[0]
+            pred  = fila.iloc[0]
+            gl_a  = int(pred["GOLES LOCAL"])
+            gv_a  = int(pred["GOLES VISITANTE"])
 
-            gl = int(pred["GOLES LOCAL"])
-            gv = int(pred["GOLES VISITANTE"])
-
-            html += f"<p><b>{nombre}:</b> {gl}-{gv}</p>"
+            if jugado:
+                ganador_a = 1 if gl_a > gv_a else -1 if gv_a > gl_a else 0
+                acerto    = ganador_a == ganador_r
+                marca     = "✅" if acerto else "❌"
+                # resaltamos si acertó exacto
+                exacto    = (gl_a == gl_r and gv_a == gv_r)
+                estilo    = " class='pred-exacto'" if exacto else ""
+                html += f"<p{estilo}>{marca} <b>{nombre}:</b> {gl_a}-{gv_a}</p>"
+            else:
+                html += f"<p><b>{nombre}:</b> {gl_a}-{gv_a}</p>"
 
         html += "</div>"
 
@@ -287,6 +414,44 @@ td:nth-child(3) {{
 
 .partido h3 {{
     color:#00ffcc;
+}}
+
+.partido.jugado {{
+    background:#1a1a1a;
+    border-left: 4px solid #555;
+    opacity: 0.85;
+}}
+
+.partido.jugado h3 {{
+    color:#888;
+}}
+
+.partido.proximo {{
+    background:#1a2a1a;
+    border-left: 4px solid #00ff99;
+    box-shadow: 0 0 12px #00ff9933;
+}}
+
+.partido.proximo h3 {{
+    color:#00ff99;
+}}
+
+.resultado-final {{
+    font-size: 1.1em;
+    margin: 6px 0 10px 0;
+    padding: 6px 10px;
+    background:#222;
+    border-radius:6px;
+    display: inline-block;
+}}
+
+.resultado {{
+    color:#fff;
+}}
+
+.pred-exacto {{
+    color:#ffd700;
+    font-weight: bold;
 }}
 
 td:nth-child(7) {{
