@@ -15,6 +15,10 @@ SALIDA = "clasificacion.xlsx"
 HTML_SALIDA = "index.html"
 RUTA_HISTORICO = Path("historico.json")
 
+# Cambiar a True cuando termine la fase de grupos
+# para activar el cálculo de posiciones, Balón de Oro y Bota de Oro
+FASE_GRUPOS_TERMINADA = False
+
 
 # ======================
 # FUNCIONES
@@ -328,7 +332,7 @@ def main():
         jugador = pd.read_excel(archivo, sheet_name="Datos")
 
         puntos, g, d, e = puntuar(maestro, jugador)
-        extras          = puntuar_extras(maestro, jugador)
+        extras = puntuar_extras(maestro, jugador) if FASE_GRUPOS_TERMINADA else 0
 
         ranking.append({
             "Participante": unicodedata.normalize("NFC", archivo.stem),
