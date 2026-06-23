@@ -20,8 +20,61 @@ RUTA_HISTORICO = Path("historico.json")
 # FUNCIONES
 # ======================
 
-ID_GRUPOS_MAX    = 72   # IDs 1-72   → fase de grupos (equipos fijos)
-ID_ELIMINATORIA  = range(73, 105)  # IDs 73-104 → eliminatorias
+ID_GRUPOS_MAX    = 72             # IDs 1-72   → fase de grupos (equipos fijos)
+ID_ELIMINATORIA  = range(73, 105) # IDs 73-104 → eliminatorias
+ID_POSICIONES    = range(1000, 1048)  # IDs 1000-1047 → posiciones de grupo (3 pts c/u)
+ID_BOTA_ORO      = 988            # Pichichi  → 10 pts
+ID_BALON_ORO     = 999            # Balón de Oro → 10 pts
+
+
+def puntuar_extras(maestro, jugador):
+    """
+    Puntúa los bonus:
+      - Posición exacta de equipo en fase de grupos (IDs 1000-1047): 3 pts
+      - Bota de Oro / Pichichi (ID 988): 10 pts
+      - Balón de Oro (ID 999): 10 pts
+    Devuelve los puntos extra totales.
+    """
+    puntos_extra = 0
+
+    # ── Posiciones de grupo ──────────────────────────────
+    maestro_pos = maestro[maestro["ID"].isin(ID_POSICIONES)]
+
+    for _, real in maestro_pos.iterrows():
+        real_id    = int(real["ID"])
+        equipo_real = str(real["GOLES LOCAL"]).strip() if pd.notna(real["GOLES LOCAL"]) else ""
+
+        if not equipo_real or equipo_real in ("nan", "0", ""):
+            continue  # resultado aún no rellenado
+
+        fila_jug = jugador[jugador["ID"] == real_id]
+        if fila_jug.empty:
+            continue
+
+        equipo_pred = str(fila_jug.iloc[0]["GOLES LOCAL"]).strip()
+        if equipo_pred.lower() == equipo_real.lower():
+            puntos_extra += 3
+
+    # ── Bota de Oro / Balón de Oro ───────────────────────
+    for id_premio, col_maestro in [(ID_BOTA_ORO, "Unnamed: 6"), (ID_BALON_ORO, "Unnamed: 6")]:
+
+        fila_real = maestro[maestro["ID"] == id_premio]
+        if fila_real.empty:
+            continue
+
+        resultado_real = str(fila_real.iloc[0].get(col_maestro, "")).strip()
+        if not resultado_real or resultado_real in ("nan", "0", "0.0", ""):
+            continue  # aún no resuelto
+
+        fila_jug = jugador[jugador["ID"] == id_premio]
+        if fila_jug.empty:
+            continue
+
+        pred = str(fila_jug.iloc[0].get("PREMIO", "")).strip()
+        if pred.lower() == resultado_real.lower():
+            puntos_extra += 10
+
+    return puntos_extra
 
 
 def puntuar(maestro, jugador):
@@ -275,13 +328,15 @@ def main():
         jugador = pd.read_excel(archivo, sheet_name="Datos")
 
         puntos, g, d, e = puntuar(maestro, jugador)
+        extras          = puntuar_extras(maestro, jugador)
 
         ranking.append({
             "Participante": unicodedata.normalize("NFC", archivo.stem),
-            "Signo": g,
-            "Diferencia": d,
-            "Exactos": e,
-            "Totales": puntos
+            "Signo":        g,
+            "Diferencia":   d,
+            "Exactos":      e,
+            "Extras":       extras,
+            "Totales":      puntos + extras
         })
 
     df = pd.DataFrame(ranking).sort_values("Totales", ascending=False).reset_index(drop=True)
