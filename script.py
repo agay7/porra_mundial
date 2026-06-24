@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 import json
 import unicodedata
-from datetime import datetime
+from datetime import datetime, timedelta
 import subprocess
 
 # ======================
@@ -232,86 +232,117 @@ def guardar_historico(df):
         json.dump(historico, f, ensure_ascii=False, indent=2)
 
 
-def partidos_hoy_predicciones(maestro):
+def partidos_por_dia(maestro):
 
     maestro["Fecha"] = pd.to_datetime(maestro["Fecha"], dayfirst=True, errors="coerce")
     maestro["Hora"]  = pd.to_datetime(maestro["Hora"],  format="%H:%M", errors="coerce")
 
     hoy = datetime.now().date()
 
-    partidos = maestro[maestro["Fecha"].dt.date == hoy].sort_values("Hora")
+    # Días con partidos, ordenados
+    fechas = sorted(maestro["Fecha"].dropna().dt.date.unique())
 
-    if partidos.empty:
-        partidos = maestro[maestro["JUGADO"] != 1].head(3)
+    if not fechas:
+        return ""
 
-    # Primer partido sin jugar hoy → se resalta como "próximo"
-    proximos = partidos[partidos["JUGADO"] != 1]
-    id_proximo = int(proximos.iloc[0]["ID"]) if not proximos.empty else None
+    # Índice del día a mostrar por defecto: hoy o el próximo con partidos
+    idx_actual = len(fechas) - 1
+    for i, f in enumerate(fechas):
+        if f >= hoy:
+            idx_actual = i
+            break
 
-    html = "<div class='partidos'><h2>📅 Partidos de hoy</h2>"
+    secciones = []
 
-    for _, partido in partidos.iterrows():
+    for i, fecha in enumerate(fechas):
+        partidos_dia = maestro[maestro["Fecha"].dt.date == fecha].sort_values("Hora")
 
-        jugado   = int(partido.get("JUGADO", 0)) == 1
-        es_proximo = (int(partido["ID"]) == id_proximo)
+        proximos   = partidos_dia[partidos_dia["JUGADO"] != 1]
+        id_proximo = int(proximos.iloc[0]["ID"]) if not proximos.empty else None
 
-        hora_txt = partido["Hora"].strftime("%H:%M") if pd.notna(partido["Hora"]) else ""
-
-        # Resultado real si ya se jugó
-        if jugado:
-            gl_r = int(partido["GOLES LOCAL"])
-            gv_r = int(partido["GOLES VISITANTE"])
-            resultado_txt = (
-                f"<span class='resultado'>"
-                f"{partido['LOCAL']} <b>{gl_r} - {gv_r}</b> {partido['VISITANTE']}"
-                f"</span>"
-            )
-            ganador_r = 1 if gl_r > gv_r else -1 if gv_r > gl_r else 0
+        if fecha == hoy:
+            label = "📅 Partidos de hoy"
+        elif fecha == hoy - timedelta(days=1):
+            label = "📅 Partidos de ayer"
+        elif fecha == hoy + timedelta(days=1):
+            label = "📅 Partidos de mañana"
         else:
-            resultado_txt = ""
-            ganador_r     = None
+            label = f"📅 {fecha.strftime('%d/%m/%Y')}"
 
-        clase = "partido jugado" if jugado else ("partido proximo" if es_proximo else "partido")
-        icono = "✅" if jugado else ("🔜" if es_proximo else "🕐")
+        visible       = "block" if i == idx_actual else "none"
+        prev_disabled = " disabled" if i == 0 else ""
+        next_disabled = " disabled" if i == len(fechas) - 1 else ""
 
-        html += f"<div class='{clase}'>"
-        html += f"<h3>{icono} {hora_txt} - {partido['LOCAL']} vs {partido['VISITANTE']}</h3>"
+        html  = f"<div class='partidos' id='dia-{i}' style='display:{visible}'>"
+        html += (
+            f"<div class='nav-partidos'>"
+            f"<button class='nav-btn'{prev_disabled} onclick='cambiarDia({i - 1})'>&#9664;</button>"
+            f"<h2>{label}</h2>"
+            f"<button class='nav-btn'{next_disabled} onclick='cambiarDia({i + 1})'>&#9654;</button>"
+            f"</div>"
+        )
 
-        if jugado:
-            html += f"<p class='resultado-final'>Resultado: {resultado_txt}</p>"
+        for _, partido in partidos_dia.iterrows():
 
-        # Predicciones de cada participante
-        for archivo in RUTA_PARTICIPANTES.glob("*.xlsx"):
+            jugado     = int(partido.get("JUGADO", 0)) == 1
+            es_proximo = (int(partido["ID"]) == id_proximo)
 
-            if archivo.name.startswith("~$"):
-                continue
-
-            nombre = archivo.stem.replace("_", " ")
-            jugador = pd.read_excel(archivo, sheet_name="Datos")
-
-            fila = jugador[jugador["ID"] == partido["ID"]]
-            if fila.empty:
-                continue
-
-            pred  = fila.iloc[0]
-            gl_a  = int(pred["GOLES LOCAL"])
-            gv_a  = int(pred["GOLES VISITANTE"])
+            hora_txt = partido["Hora"].strftime("%H:%M") if pd.notna(partido["Hora"]) else ""
 
             if jugado:
-                ganador_a = 1 if gl_a > gv_a else -1 if gv_a > gl_a else 0
-                acerto    = ganador_a == ganador_r
-                marca     = "✅" if acerto else "❌"
-                # resaltamos si acertó exacto
-                exacto    = (gl_a == gl_r and gv_a == gv_r)
-                estilo    = " class='pred-exacto'" if exacto else ""
-                html += f"<p{estilo}>{marca} <b>{nombre}:</b> {gl_a}-{gv_a}</p>"
+                gl_r = int(partido["GOLES LOCAL"])
+                gv_r = int(partido["GOLES VISITANTE"])
+                resultado_txt = (
+                    f"<span class='resultado'>"
+                    f"{partido['LOCAL']} <b>{gl_r} - {gv_r}</b> {partido['VISITANTE']}"
+                    f"</span>"
+                )
+                ganador_r = 1 if gl_r > gv_r else -1 if gv_r > gl_r else 0
             else:
-                html += f"<p><b>{nombre}:</b> {gl_a}-{gv_a}</p>"
+                resultado_txt = ""
+                ganador_r     = None
+
+            clase = "partido jugado" if jugado else ("partido proximo" if es_proximo else "partido")
+            icono = "✅" if jugado else ("🔜" if es_proximo else "🕐")
+
+            html += f"<div class='{clase}'>"
+            html += f"<h3>{icono} {hora_txt} - {partido['LOCAL']} vs {partido['VISITANTE']}</h3>"
+
+            if jugado:
+                html += f"<p class='resultado-final'>Resultado: {resultado_txt}</p>"
+
+            for archivo in RUTA_PARTICIPANTES.glob("*.xlsx"):
+
+                if archivo.name.startswith("~$"):
+                    continue
+
+                nombre     = archivo.stem.replace("_", " ")
+                jugador_df = pd.read_excel(archivo, sheet_name="Datos")
+
+                fila = jugador_df[jugador_df["ID"] == partido["ID"]]
+                if fila.empty:
+                    continue
+
+                pred = fila.iloc[0]
+                gl_a = int(pred["GOLES LOCAL"])
+                gv_a = int(pred["GOLES VISITANTE"])
+
+                if jugado:
+                    ganador_a = 1 if gl_a > gv_a else -1 if gv_a > gl_a else 0
+                    acerto    = ganador_a == ganador_r
+                    marca     = "✅" if acerto else "❌"
+                    exacto    = (gl_a == gl_r and gv_a == gv_r)
+                    estilo    = " class='pred-exacto'" if exacto else ""
+                    html += f"<p{estilo}>{marca} <b>{nombre}:</b> {gl_a}-{gv_a}</p>"
+                else:
+                    html += f"<p><b>{nombre}:</b> {gl_a}-{gv_a}</p>"
+
+            html += "</div>"
 
         html += "</div>"
+        secciones.append(html)
 
-    html += "</div>"
-    return html
+    return "\n".join(secciones)
 
 
 # ======================
@@ -389,7 +420,7 @@ def main():
     ]]
 
     html_table = df.to_html(index=False, escape=False)
-    partidos_html = partidos_hoy_predicciones(maestro)
+    partidos_html = partidos_por_dia(maestro)
 
     now = datetime.now().strftime("%d/%m %H:%M:%S")
 
@@ -518,6 +549,40 @@ td:nth-child(7) {{
     font-weight:bold;
 }}
 
+.nav-partidos {{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}}
+
+.nav-partidos h2 {{
+    margin: 0;
+    flex: 1;
+    text-align: center;
+}}
+
+.nav-btn {{
+    background: #333;
+    color: #fff;
+    border: none;
+    padding: 8px 18px;
+    font-size: 1.2em;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}}
+
+.nav-btn:hover:not(:disabled) {{
+    background: #00ff99;
+    color: #000;
+}}
+
+.nav-btn:disabled {{
+    opacity: 0.25;
+    cursor: default;
+}}
+
 </style>
 
 </head>
@@ -532,6 +597,14 @@ td:nth-child(7) {{
 
 {partidos_html}
 
+<script>
+function cambiarDia(idx) {{
+    document.querySelectorAll('.partidos').forEach(function(el) {{ el.style.display = 'none'; }});
+    var el = document.getElementById('dia-' + idx);
+    if (el) el.style.display = 'block';
+}}
+</script>
+
 </body>
 </html>
 """
@@ -543,7 +616,7 @@ td:nth-child(7) {{
     # para que la próxima vez la evolución se calcule correctamente
     guardar_historico(df)
 
-    print("✅ TODO OK")
+    print("OK")
 
 
 # ======================
