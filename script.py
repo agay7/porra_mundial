@@ -239,6 +239,15 @@ def partidos_por_dia(maestro):
 
     hoy = datetime.now().date()
 
+    # Cargar todos los participantes una sola vez
+    participantes = {}
+    for archivo in sorted(RUTA_PARTICIPANTES.glob("*.xlsx")):
+        if archivo.name.startswith("~$"):
+            continue
+        nombre = archivo.stem.replace("_", " ")
+        df_jug = pd.read_excel(archivo, sheet_name="Datos")
+        participantes[nombre] = df_jug.set_index("ID")
+
     # Días con partidos, ordenados
     fechas = sorted(maestro["Fecha"].dropna().dt.date.unique())
 
@@ -261,13 +270,13 @@ def partidos_por_dia(maestro):
         id_proximo = int(proximos.iloc[0]["ID"]) if not proximos.empty else None
 
         if fecha == hoy:
-            label = "📅 Partidos de hoy"
+            label = "Partidos de hoy"
         elif fecha == hoy - timedelta(days=1):
-            label = "📅 Partidos de ayer"
+            label = "Partidos de ayer"
         elif fecha == hoy + timedelta(days=1):
-            label = "📅 Partidos de mañana"
+            label = "Partidos de manana"
         else:
-            label = f"📅 {fecha.strftime('%d/%m/%Y')}"
+            label = fecha.strftime("%d/%m/%Y")
 
         visible       = "block" if i == idx_actual else "none"
         prev_disabled = " disabled" if i == 0 else ""
@@ -277,7 +286,7 @@ def partidos_por_dia(maestro):
         html += (
             f"<div class='nav-partidos'>"
             f"<button class='nav-btn'{prev_disabled} onclick='cambiarDia({i - 1})'>&#9664;</button>"
-            f"<h2>{label}</h2>"
+            f"<h2>&#128197; {label}</h2>"
             f"<button class='nav-btn'{next_disabled} onclick='cambiarDia({i + 1})'>&#9654;</button>"
             f"</div>"
         )
@@ -303,7 +312,7 @@ def partidos_por_dia(maestro):
                 ganador_r     = None
 
             clase = "partido jugado" if jugado else ("partido proximo" if es_proximo else "partido")
-            icono = "✅" if jugado else ("🔜" if es_proximo else "🕐")
+            icono = "&#9989;" if jugado else ("&#128284;" if es_proximo else "&#128336;")
 
             html += f"<div class='{clase}'>"
             html += f"<h3>{icono} {hora_txt} - {partido['LOCAL']} vs {partido['VISITANTE']}</h3>"
@@ -311,26 +320,19 @@ def partidos_por_dia(maestro):
             if jugado:
                 html += f"<p class='resultado-final'>Resultado: {resultado_txt}</p>"
 
-            for archivo in RUTA_PARTICIPANTES.glob("*.xlsx"):
-
-                if archivo.name.startswith("~$"):
+            pid = partido["ID"]
+            for nombre, df_jug in participantes.items():
+                if pid not in df_jug.index:
                     continue
 
-                nombre     = archivo.stem.replace("_", " ")
-                jugador_df = pd.read_excel(archivo, sheet_name="Datos")
-
-                fila = jugador_df[jugador_df["ID"] == partido["ID"]]
-                if fila.empty:
-                    continue
-
-                pred = fila.iloc[0]
+                pred = df_jug.loc[pid]
                 gl_a = int(pred["GOLES LOCAL"])
                 gv_a = int(pred["GOLES VISITANTE"])
 
                 if jugado:
                     ganador_a = 1 if gl_a > gv_a else -1 if gv_a > gl_a else 0
                     acerto    = ganador_a == ganador_r
-                    marca     = "✅" if acerto else "❌"
+                    marca     = "&#9989;" if acerto else "&#10060;"
                     exacto    = (gl_a == gl_r and gv_a == gv_r)
                     estilo    = " class='pred-exacto'" if exacto else ""
                     html += f"<p{estilo}>{marca} <b>{nombre}:</b> {gl_a}-{gv_a}</p>"
@@ -628,9 +630,9 @@ def push_git():
         subprocess.run(["git", "add", "."], check=True)
         subprocess.run(["git", "commit", "-m", "auto update"], check=False)
         subprocess.run(["git", "push"], check=True)
-        print("✅ Repo actualizado automáticamente")
+        print("Git OK")
     except Exception as e:
-        print(f"⚠️ Error en git: {e}")
+        print(f"Git error: {e}")
 
 
 if __name__ == "__main__":
