@@ -214,13 +214,13 @@ def cargar_historico():
     """Lee la clasificación de la ejecución anterior desde historico.json."""
     if RUTA_HISTORICO.exists():
         try:
-            with open(RUTA_HISTORICO, "r", encoding="utf-8") as f:
+            with open(RUTA_HISTORICO, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
             # normalizamos los nombres (NFC) para evitar que un mismo nombre
             # con tildes codificadas de forma distinta no haga "match"
             return {unicodedata.normalize("NFC", k): v for k, v in data.items()}
         except Exception as e:
-            print(f"⚠️ No se pudo leer historico.json: {e}")
+            print(f"No se pudo leer historico.json: {e}")
             return {}
     return {}
 
@@ -274,7 +274,7 @@ def partidos_por_dia(maestro):
         elif fecha == hoy - timedelta(days=1):
             label = "Partidos de ayer"
         elif fecha == hoy + timedelta(days=1):
-            label = "Partidos de manana"
+            label = "Partidos de tomorrow"
         else:
             label = fecha.strftime("%d/%m/%Y")
 
