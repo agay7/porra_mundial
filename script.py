@@ -211,14 +211,13 @@ def puntuar(maestro, jugador):
 
 
 def cargar_historico():
-    """Lee la clasificación de la ejecución anterior desde historico.json."""
+    """Lee la clasificación de referencia desde historico.json."""
     if RUTA_HISTORICO.exists():
         try:
             with open(RUTA_HISTORICO, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
-            # normalizamos los nombres (NFC) para evitar que un mismo nombre
-            # con tildes codificadas de forma distinta no haga "match"
-            return {unicodedata.normalize("NFC", k): v for k, v in data.items()}
+            posiciones = data.get("posiciones", data)
+            return {unicodedata.normalize("NFC", k): v for k, v in posiciones.items() if k != "fecha"}
         except Exception as e:
             print(f"No se pudo leer historico.json: {e}")
             return {}
@@ -226,10 +225,28 @@ def cargar_historico():
 
 
 def guardar_historico(df):
-    """Guarda la clasificación actual en historico.json para la próxima ejecución."""
-    historico = dict(zip(df["Participante"], df["Posición"].astype(int)))
+    """Guarda el histórico solo si ha cambiado el día, para que la evolución
+    compare siempre contra el inicio del día anterior, no contra la última ejecución."""
+    hoy = datetime.now().date().isoformat()
+
+    fecha_guardada = None
+    if RUTA_HISTORICO.exists():
+        try:
+            with open(RUTA_HISTORICO, "r", encoding="utf-8-sig") as f:
+                data = json.load(f)
+            fecha_guardada = data.get("fecha")
+        except Exception:
+            pass
+
+    if fecha_guardada == hoy:
+        return  # ya se actualizó hoy, no sobreescribir
+
+    nuevo = {
+        "fecha": hoy,
+        "posiciones": dict(zip(df["Participante"], df["Posición"].astype(int)))
+    }
     with open(RUTA_HISTORICO, "w", encoding="utf-8") as f:
-        json.dump(historico, f, ensure_ascii=False, indent=2)
+        json.dump(nuevo, f, ensure_ascii=False, indent=2)
 
 
 def partidos_por_dia(maestro):
