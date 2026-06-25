@@ -225,24 +225,9 @@ def cargar_historico():
 
 
 def guardar_historico(df):
-    """Guarda el histórico solo si ha cambiado el día, para que la evolución
-    compare siempre contra el inicio del día anterior, no contra la última ejecución."""
-    hoy = datetime.now().date().isoformat()
-
-    fecha_guardada = None
-    if RUTA_HISTORICO.exists():
-        try:
-            with open(RUTA_HISTORICO, "r", encoding="utf-8-sig") as f:
-                data = json.load(f)
-            fecha_guardada = data.get("fecha")
-        except Exception:
-            pass
-
-    if fecha_guardada == hoy:
-        return  # ya se actualizó hoy, no sobreescribir
-
+    """Guarda la clasificación actual en historico.json para la próxima ejecución."""
     nuevo = {
-        "fecha": hoy,
+        "fecha": datetime.now().date().isoformat(),
         "posiciones": dict(zip(df["Participante"], df["Posición"].astype(int)))
     }
     with open(RUTA_HISTORICO, "w", encoding="utf-8") as f:
