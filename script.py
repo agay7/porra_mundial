@@ -400,17 +400,21 @@ def partidos_por_dia(maestro):
                                         tiene_alguno = True
                                         break
 
-                        # Buscar cada equipo real individualmente en todo el bracket
-                        equipos_en_bracket = set()
+                        # Buscar cada equipo real individualmente en todo el bracket (guardando el resultado de ese slot)
+                        equipos_en_bracket = {}
                         for lid in sorted((i for i in df_jug.index if pd.notna(i) and 73 <= int(i) <= 104), key=int):
                             lpred2 = df_jug.loc[lid]
                             if "LOCAL" not in lpred2.index or "VISITANTE" not in lpred2.index:
                                 continue
                             ll2 = str(lpred2["LOCAL"]).strip() if pd.notna(lpred2["LOCAL"]) else ""
                             lv2 = str(lpred2["VISITANTE"]).strip() if pd.notna(lpred2["VISITANTE"]) else ""
+                            if ll2 in ("", "nan") or lv2 in ("", "nan"):
+                                continue
+                            gl2 = int(lpred2["GOLES LOCAL"])
+                            gv2 = int(lpred2["GOLES VISITANTE"])
                             for eq in equipos_reales:
-                                if eq in {ll2, lv2}:
-                                    equipos_en_bracket.add(eq)
+                                if eq in {ll2, lv2} and eq not in equipos_en_bracket:
+                                    equipos_en_bracket[eq] = (ll2, gl2, gv2, lv2)
 
                         # En caso de empate (con al menos un equipo real), buscar quién clasifica en rondas siguientes
                         clasificado = ""
@@ -428,20 +432,24 @@ def partidos_por_dia(maestro):
                                 if clasificado:
                                     break
 
-                        # Equipos reales en bracket pero no en el slot mostrado
+                        # Equipos reales en bracket pero no en el slot mostrado → añadir resultado de ese otro cruce
                         disp_equipos = {e for e in [disp_local, disp_visit] if e and e not in ("", "nan")}
-                        extras = equipos_en_bracket - disp_equipos
-                        nota_extras = (" [también tiene: " + ", ".join(sorted(extras)) + "]") if extras and not tiene_ambos else ""
+                        extras = {eq: v for eq, v in equipos_en_bracket.items() if eq not in disp_equipos}
+                        if extras and not tiene_ambos:
+                            partes = [f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(extras.items())]
+                            nota_extras = " [también: " + " | ".join(partes) + "]"
+                        else:
+                            nota_extras = ""
 
                         if tiene_ambos:
                             html += f"<p><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}</p>"
                         elif tiene_alguno:
                             html += f"<p><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}{nota_extras}</p>"
                         elif equipos_en_bracket:
-                            nota_bracket = " [" + ", ".join(f"{eq} en otro cruce" for eq in sorted(equipos_en_bracket)) + "]"
-                            html += f"<p style='color:#aaa'><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit}{nota_bracket}</p>"
+                            partes = [f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(equipos_en_bracket.items())]
+                            html += f"<p style='color:#aaa'><b>{nombre}:</b> {' | '.join(partes)}</p>"
                         else:
-                            html += f"<p style='color:#666'><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit} &#10060;</p>"
+                            html += f"<p style='color:#666'><b>{nombre}:</b> &#10060;</p>"
                     else:
                         html += f"<p><b>{nombre}:</b> {gl_a}-{gv_a}</p>"
 
