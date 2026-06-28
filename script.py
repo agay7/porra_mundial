@@ -447,7 +447,7 @@ def partidos_por_dia(maestro):
                             html += f"<p><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}{nota_extras}</p>"
                         elif equipos_en_bracket:
                             partes = [f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(equipos_en_bracket.items())]
-                            html += f"<p style='color:#aaa'><b>{nombre}:</b> {' | '.join(partes)}</p>"
+                            html += f"<p><b>{nombre}:</b> <span style='color:#aaa'>{' | '.join(partes)}</span></p>"
                         else:
                             html += f"<p style='color:#666'><b>{nombre}:</b> &#10060;</p>"
                     else:
