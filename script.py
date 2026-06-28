@@ -420,6 +420,7 @@ def main():
         "Signo",
         "Diferencia",
         "Exactos",
+        "Extras",
         "Totales"
     ]]
 
@@ -548,7 +549,7 @@ td:nth-child(3) {{
     font-weight: bold;
 }}
 
-td:nth-child(7) {{
+td:nth-child(8) {{
     color:#00ff99;
     font-weight:bold;
 }}
