@@ -375,11 +375,53 @@ def partidos_por_dia(maestro):
                     if es_eliminatoria and equipos_reales:
                         pred_local_eq = str(pred["LOCAL"]).strip() if "LOCAL" in pred.index and pd.notna(pred["LOCAL"]) else ""
                         pred_visit_eq = str(pred["VISITANTE"]).strip() if "VISITANTE" in pred.index and pd.notna(pred["VISITANTE"]) else ""
-                        equipos_pred = {e for e in [pred_local_eq, pred_visit_eq] if e and e != "nan"}
-                        if equipos_reales & equipos_pred:
-                            html += f"<p><b>{nombre}:</b> {pred_local_eq} {gl_a}-{gv_a} {pred_visit_eq}</p>"
+                        equipos_slot = {e for e in [pred_local_eq, pred_visit_eq] if e and e != "nan"}
+                        comunes_slot = equipos_reales & equipos_slot
+
+                        disp_local, disp_visit = pred_local_eq, pred_visit_eq
+                        disp_gl, disp_gv = gl_a, gv_a
+                        tiene_ambos = len(comunes_slot) == 2
+                        tiene_alguno = len(comunes_slot) >= 1
+
+                        # Level 2: buscar ambos equipos reales juntos en otro slot de eliminatoria
+                        if not tiene_ambos:
+                            for lid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104), key=int):
+                                lpred = df_jug.loc[lid]
+                                if "LOCAL" not in lpred.index or "VISITANTE" not in lpred.index:
+                                    continue
+                                ll = str(lpred["LOCAL"]).strip() if pd.notna(lpred["LOCAL"]) else ""
+                                lv = str(lpred["VISITANTE"]).strip() if pd.notna(lpred["VISITANTE"]) else ""
+                                if ll not in ("", "nan") and lv not in ("", "nan"):
+                                    if real_local_eq in {ll, lv} and real_visit_eq in {ll, lv}:
+                                        disp_local, disp_visit = ll, lv
+                                        disp_gl = int(lpred["GOLES LOCAL"])
+                                        disp_gv = int(lpred["GOLES VISITANTE"])
+                                        tiene_ambos = True
+                                        tiene_alguno = True
+                                        break
+
+                        # En caso de empate con ambos equipos localizados, buscar quién clasifica en rondas siguientes
+                        clasificado = ""
+                        if tiene_ambos and disp_gl == disp_gv:
+                            for nid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104), key=int):
+                                npred = df_jug.loc[nid]
+                                if "LOCAL" not in npred.index or "VISITANTE" not in npred.index:
+                                    continue
+                                nl = str(npred["LOCAL"]).strip() if pd.notna(npred["LOCAL"]) else ""
+                                nv = str(npred["VISITANTE"]).strip() if pd.notna(npred["VISITANTE"]) else ""
+                                for eq in equipos_reales:
+                                    if eq in {nl, nv}:
+                                        clasificado = f" (→ {eq})"
+                                        break
+                                if clasificado:
+                                    break
+
+                        if tiene_ambos:
+                            html += f"<p><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}</p>"
+                        elif tiene_alguno:
+                            html += f"<p><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit}</p>"
                         else:
-                            html += f"<p style='color:#666'><b>{nombre}:</b> {pred_local_eq} {gl_a}-{gv_a} {pred_visit_eq} &#10060;</p>"
+                            html += f"<p style='color:#666'><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit} &#10060;</p>"
                     else:
                         html += f"<p><b>{nombre}:</b> {gl_a}-{gv_a}</p>"
 
