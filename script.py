@@ -400,9 +400,21 @@ def partidos_por_dia(maestro):
                                         tiene_alguno = True
                                         break
 
-                        # En caso de empate con ambos equipos localizados, buscar quién clasifica en rondas siguientes
+                        # Buscar cada equipo real individualmente en todo el bracket
+                        equipos_en_bracket = set()
+                        for lid in sorted((i for i in df_jug.index if pd.notna(i) and 73 <= int(i) <= 104), key=int):
+                            lpred2 = df_jug.loc[lid]
+                            if "LOCAL" not in lpred2.index or "VISITANTE" not in lpred2.index:
+                                continue
+                            ll2 = str(lpred2["LOCAL"]).strip() if pd.notna(lpred2["LOCAL"]) else ""
+                            lv2 = str(lpred2["VISITANTE"]).strip() if pd.notna(lpred2["VISITANTE"]) else ""
+                            for eq in equipos_reales:
+                                if eq in {ll2, lv2}:
+                                    equipos_en_bracket.add(eq)
+
+                        # En caso de empate (con al menos un equipo real), buscar quién clasifica en rondas siguientes
                         clasificado = ""
-                        if tiene_ambos and disp_gl == disp_gv:
+                        if tiene_alguno and disp_gl == disp_gv:
                             for nid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104), key=int):
                                 npred = df_jug.loc[nid]
                                 if "LOCAL" not in npred.index or "VISITANTE" not in npred.index:
@@ -416,10 +428,18 @@ def partidos_por_dia(maestro):
                                 if clasificado:
                                     break
 
+                        # Equipos reales en bracket pero no en el slot mostrado
+                        disp_equipos = {e for e in [disp_local, disp_visit] if e and e not in ("", "nan")}
+                        extras = equipos_en_bracket - disp_equipos
+                        nota_extras = (" [también tiene: " + ", ".join(sorted(extras)) + "]") if extras and not tiene_ambos else ""
+
                         if tiene_ambos:
                             html += f"<p><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}</p>"
                         elif tiene_alguno:
-                            html += f"<p><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit}</p>"
+                            html += f"<p><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}{nota_extras}</p>"
+                        elif equipos_en_bracket:
+                            nota_bracket = " [" + ", ".join(f"{eq} en otro cruce" for eq in sorted(equipos_en_bracket)) + "]"
+                            html += f"<p style='color:#aaa'><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit}{nota_bracket}</p>"
                         else:
                             html += f"<p style='color:#666'><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit} &#10060;</p>"
                     else:
