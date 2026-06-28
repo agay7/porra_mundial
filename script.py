@@ -170,11 +170,11 @@ def puntuar(maestro, jugador):
                     if pred_invertido:
                         gl_a, gv_a = gv_a, gl_a
                     if gl_r == gl_a and gv_r == gv_a:
-                        total += 5; e += 1
+                        total += 10; e += 1
                     elif (gl_r - gv_r) == (gl_a - gv_a):
-                        total += 3; d += 1
+                        total += 7; d += 1
                     else:
-                        total += 1; g += 1
+                        total += 5; g += 1
                 # ganador incorrecto → 0 pts
 
             # ── UN equipo correcto en el mismo ID ────────────────────────────
@@ -182,7 +182,7 @@ def puntuar(maestro, jugador):
             elif len(acertados_l1) == 1:
 
                 if winner_pred is not None and winner_pred == winner_real:
-                    total += 1; g += 1
+                    total += 5; g += 1
                 # ganador incorrecto → 0 pts
 
             # ── CERO equipos correctos en el mismo ID ────────────────────────
@@ -215,11 +215,11 @@ def puntuar(maestro, jugador):
                         gl_cmp = gv_l2 if invertido_l2 else gl_l2
                         gv_cmp = gl_l2 if invertido_l2 else gv_l2
                         if gl_r == gl_cmp and gv_r == gv_cmp:
-                            total += 5; e += 1
+                            total += 10; e += 1
                         elif (gl_r - gv_r) == (gl_cmp - gv_cmp):
-                            total += 3; d += 1
+                            total += 7; d += 1
                         else:
-                            total += 1; g += 1
+                            total += 5; g += 1
                     # ganador incorrecto → 0 pts
 
                 else:
@@ -233,7 +233,7 @@ def puntuar(maestro, jugador):
                             )
                         ]
                         if not encontrado.empty:
-                            total += 1; g += 1
+                            total += 5; g += 1
 
     return total, g, d, e
 
