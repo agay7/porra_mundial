@@ -144,9 +144,15 @@ def puntuar(maestro, jugador):
             elif gv_r > gl_r:
                 winner_real = real_visit
             else:
-                # Empate tras prórroga → ganador por penaltis no cambia el marcador;
-                # en este caso no se puede puntuar diferencia ni exacto
                 winner_real = None
+
+            # Ganador predicho en el mismo ID
+            if gl_a > gv_a:
+                winner_pred = pred_local
+            elif gv_a > gl_a:
+                winner_pred = pred_visit
+            else:
+                winner_pred = None
 
             # --- LEVEL 1: equipos acertados en el mismo ID ---
             acertados_l1 = set()
@@ -155,57 +161,79 @@ def puntuar(maestro, jugador):
             if pred_visit in equipos_reales:
                 acertados_l1.add(pred_visit)
 
-            # Detectamos si los dos equipos están pero invertidos
             pred_invertido = (pred_local == real_visit and pred_visit == real_local)
 
-            # --- LEVEL 2: buscar equipos reales en otros IDs de eliminatoria ---
-            acertados_l2 = set()
-            for equipo in equipos_reales:
-                if equipo not in acertados_l1:
-                    encontrado = jugador_ko[
-                        (jugador_ko["ID"] != real_id) &
-                        (
-                            (jugador_ko["LOCAL"]     == equipo) |
-                            (jugador_ko["VISITANTE"] == equipo)
-                        )
-                    ]
-                    if not encontrado.empty:
-                        acertados_l2.add(equipo)
+            # ── DOS equipos correctos en el mismo ID ─────────────────────────
+            if len(acertados_l1) == 2:
 
-            acertados = acertados_l1 | acertados_l2
+                if winner_pred is not None and winner_pred == winner_real:
+                    if pred_invertido:
+                        gl_a, gv_a = gv_a, gl_a
+                    if gl_r == gl_a and gv_r == gv_a:
+                        total += 5; e += 1
+                    elif (gl_r - gv_r) == (gl_a - gv_a):
+                        total += 3; d += 1
+                    else:
+                        total += 1; g += 1
+                # ganador incorrecto → 0 pts
 
-            # Si no acertó ningún equipo real → 0 puntos
-            if not acertados:
-                continue
+            # ── UN equipo correcto en el mismo ID ────────────────────────────
+            # No se compara el marcador aunque coincida
+            elif len(acertados_l1) == 1:
 
-            # Ganador predicho desde la apuesta del mismo ID
-            if gl_a > gv_a:
-                winner_pred = pred_local
-            elif gv_a > gl_a:
-                winner_pred = pred_visit
-            else:
-                winner_pred = None
-
-            # ¿El ganador predicho (mismo ID) es el equipo ganador real?
-            if winner_pred in equipos_reales and winner_pred == winner_real:
-
-                # Acertó el ganador desde el mismo ID → puntuación completa
-                # Si los equipos estaban invertidos, normalizamos el marcador
-                if pred_invertido:
-                    gl_a, gv_a = gv_a, gl_a
-
-                if gl_r == gl_a and gv_r == gv_a:
-                    total += 5; e += 1
-                elif (gl_r - gv_r) == (gl_a - gv_a):
-                    total += 3; d += 1
-                else:
+                if winner_pred is not None and winner_pred == winner_real:
                     total += 1; g += 1
+                # ganador incorrecto → 0 pts
 
-            elif winner_real in acertados_l2:
-                # El ganador real no aparece como ganador en la predicción del mismo ID,
-                # pero el participante lo predijo en algún otro cruce de eliminatoria (Level 2)
-                # → acertó que ese equipo llegaría hasta aquí → 1 punto
-                total += 1; g += 1
+            # ── CERO equipos correctos en el mismo ID ────────────────────────
+            else:
+
+                # ¿Están los DOS equipos reales juntos en otro cruce predicho?
+                partido_l2 = None
+                for _, pred_row in jugador_ko[jugador_ko["ID"] != real_id].iterrows():
+                    p_loc = str(pred_row["LOCAL"]).strip()
+                    p_vis = str(pred_row["VISITANTE"]).strip()
+                    if real_local in {p_loc, p_vis} and real_visit in {p_loc, p_vis}:
+                        partido_l2 = pred_row
+                        break
+
+                if partido_l2 is not None:
+                    # Ambos equipos predichos juntos en otro cruce → puntuación completa
+                    gl_l2 = partido_l2["GOLES LOCAL"]
+                    gv_l2 = partido_l2["GOLES VISITANTE"]
+                    p_loc_l2 = str(partido_l2["LOCAL"]).strip()
+                    invertido_l2 = (p_loc_l2 == real_visit)
+
+                    if gl_l2 > gv_l2:
+                        winner_l2 = p_loc_l2
+                    elif gv_l2 > gl_l2:
+                        winner_l2 = str(partido_l2["VISITANTE"]).strip()
+                    else:
+                        winner_l2 = None
+
+                    if winner_l2 is not None and winner_l2 == winner_real:
+                        gl_cmp = gv_l2 if invertido_l2 else gl_l2
+                        gv_cmp = gl_l2 if invertido_l2 else gv_l2
+                        if gl_r == gl_cmp and gv_r == gv_cmp:
+                            total += 5; e += 1
+                        elif (gl_r - gv_r) == (gl_cmp - gv_cmp):
+                            total += 3; d += 1
+                        else:
+                            total += 1; g += 1
+                    # ganador incorrecto → 0 pts
+
+                else:
+                    # ¿Aparece el equipo ganador real en algún otro cruce predicho?
+                    if winner_real is not None:
+                        encontrado = jugador_ko[
+                            (jugador_ko["ID"] != real_id) &
+                            (
+                                (jugador_ko["LOCAL"]     == winner_real) |
+                                (jugador_ko["VISITANTE"] == winner_real)
+                            )
+                        ]
+                        if not encontrado.empty:
+                            total += 1; g += 1
 
     return total, g, d, e
 
@@ -323,6 +351,11 @@ def partidos_por_dia(maestro):
                 html += f"<p class='resultado-final'>Resultado: {resultado_txt}</p>"
 
             pid = partido["ID"]
+            es_eliminatoria = int(pid) > ID_GRUPOS_MAX
+            real_local_eq = str(partido["LOCAL"]).strip() if "LOCAL" in partido.index and pd.notna(partido["LOCAL"]) else ""
+            real_visit_eq = str(partido["VISITANTE"]).strip() if "VISITANTE" in partido.index and pd.notna(partido["VISITANTE"]) else ""
+            equipos_reales = {e for e in [real_local_eq, real_visit_eq] if e and e != "nan"}
+
             for nombre, df_jug in participantes.items():
                 if pid not in df_jug.index:
                     continue
@@ -339,7 +372,16 @@ def partidos_por_dia(maestro):
                     estilo    = " class='pred-exacto'" if exacto else ""
                     html += f"<p{estilo}>{marca} <b>{nombre}:</b> {gl_a}-{gv_a}</p>"
                 else:
-                    html += f"<p><b>{nombre}:</b> {gl_a}-{gv_a}</p>"
+                    if es_eliminatoria and equipos_reales:
+                        pred_local_eq = str(pred["LOCAL"]).strip() if "LOCAL" in pred.index and pd.notna(pred["LOCAL"]) else ""
+                        pred_visit_eq = str(pred["VISITANTE"]).strip() if "VISITANTE" in pred.index and pd.notna(pred["VISITANTE"]) else ""
+                        equipos_pred = {e for e in [pred_local_eq, pred_visit_eq] if e and e != "nan"}
+                        if equipos_reales & equipos_pred:
+                            html += f"<p><b>{nombre}:</b> {pred_local_eq} {gl_a}-{gv_a} {pred_visit_eq}</p>"
+                        else:
+                            html += f"<p style='color:#666'><b>{nombre}:</b> {pred_local_eq} {gl_a}-{gv_a} {pred_visit_eq} &#10060;</p>"
+                    else:
+                        html += f"<p><b>{nombre}:</b> {gl_a}-{gv_a}</p>"
 
             html += "</div>"
 
