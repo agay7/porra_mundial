@@ -442,9 +442,9 @@ def partidos_por_dia(maestro):
                             nota_extras = ""
 
                         if tiene_ambos:
-                            html += f"<p><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}</p>"
+                            html += f"<p><b>{nombre}:</b> <span style='color:#aaa'>{disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}</span></p>"
                         elif tiene_alguno:
-                            html += f"<p><b>{nombre}:</b> {disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}{nota_extras}</p>"
+                            html += f"<p><b>{nombre}:</b> <span style='color:#aaa'>{disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}{nota_extras}</span></p>"
                         elif equipos_en_bracket:
                             partes = [f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(equipos_en_bracket.items())]
                             html += f"<p><b>{nombre}:</b> <span style='color:#aaa'>{' | '.join(partes)}</span></p>"
