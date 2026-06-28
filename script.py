@@ -17,7 +17,7 @@ RUTA_HISTORICO = Path("historico.json")
 
 # Cambiar a True cuando termine la fase de grupos
 # para activar el cálculo de posiciones, Balón de Oro y Bota de Oro
-FASE_GRUPOS_TERMINADA = False
+FASE_GRUPOS_TERMINADA = True
 
 
 # ======================
