@@ -365,12 +365,114 @@ def partidos_por_dia(maestro):
                 gv_a = int(pred["GOLES VISITANTE"])
 
                 if jugado:
+                  if not es_eliminatoria:
                     ganador_a = 1 if gl_a > gv_a else -1 if gv_a > gl_a else 0
                     acerto    = ganador_a == ganador_r
                     marca     = "&#9989;" if acerto else "&#10060;"
                     exacto    = (gl_a == gl_r and gv_a == gv_r)
                     estilo    = " class='pred-exacto'" if exacto else ""
                     html += f"<p{estilo}>{marca} <b>{nombre}:</b> {gl_a}-{gv_a}</p>"
+                  else:
+                    # Eliminatoria jugada: buscar equipos y calcular puntos
+                    pj_local = str(pred["LOCAL"]).strip() if "LOCAL" in pred.index and pd.notna(pred["LOCAL"]) else ""
+                    pj_visit = str(pred["VISITANTE"]).strip() if "VISITANTE" in pred.index and pd.notna(pred["VISITANTE"]) else ""
+                    eq_slot  = {e for e in [pj_local, pj_visit] if e and e != "nan"}
+                    com_slot = equipos_reales & eq_slot
+                    dj_loc, dj_vis = pj_local, pj_visit
+                    dj_gl,  dj_gv  = gl_a, gv_a
+                    tiene_ambos_j = len(com_slot) == 2
+                    tiene_alguno_j = len(com_slot) >= 1
+                    # Level 2
+                    if not tiene_ambos_j:
+                        for lid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104), key=int):
+                            lp = df_jug.loc[lid]
+                            if "LOCAL" not in lp.index or "VISITANTE" not in lp.index:
+                                continue
+                            ll = str(lp["LOCAL"]).strip() if pd.notna(lp["LOCAL"]) else ""
+                            lv = str(lp["VISITANTE"]).strip() if pd.notna(lp["VISITANTE"]) else ""
+                            if ll not in ("", "nan") and lv not in ("", "nan"):
+                                if real_local_eq in {ll, lv} and real_visit_eq in {ll, lv}:
+                                    dj_loc, dj_vis = ll, lv
+                                    dj_gl = int(lp["GOLES LOCAL"])
+                                    dj_gv = int(lp["GOLES VISITANTE"])
+                                    tiene_ambos_j = True
+                                    tiene_alguno_j = True
+                                    break
+                    # Bracket individual
+                    eq_bracket_j = {}
+                    for lid in sorted((i for i in df_jug.index if pd.notna(i) and 73 <= int(i) <= 104), key=int):
+                        lp2 = df_jug.loc[lid]
+                        if "LOCAL" not in lp2.index or "VISITANTE" not in lp2.index:
+                            continue
+                        ll2 = str(lp2["LOCAL"]).strip() if pd.notna(lp2["LOCAL"]) else ""
+                        lv2 = str(lp2["VISITANTE"]).strip() if pd.notna(lp2["VISITANTE"]) else ""
+                        if ll2 in ("", "nan") or lv2 in ("", "nan"):
+                            continue
+                        gl2j = int(lp2["GOLES LOCAL"]); gv2j = int(lp2["GOLES VISITANTE"])
+                        for eq in equipos_reales:
+                            if eq in {ll2, lv2} and eq not in eq_bracket_j:
+                                eq_bracket_j[eq] = (ll2, gl2j, gv2j, lv2)
+                    # Ganador real
+                    winner_r_j = real_local_eq if gl_r > gv_r else (real_visit_eq if gv_r > gl_r else None)
+                    # Calcular puntos
+                    pts_j = 0
+                    if tiene_ambos_j:
+                        pred_w = dj_loc if dj_gl > dj_gv else (dj_vis if dj_gv > dj_gl else None)
+                        if pred_w is None:
+                            for nid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104), key=int):
+                                np2 = df_jug.loc[nid]
+                                if "LOCAL" not in np2.index or "VISITANTE" not in np2.index:
+                                    continue
+                                nl2 = str(np2["LOCAL"]).strip() if pd.notna(np2["LOCAL"]) else ""
+                                nv2 = str(np2["VISITANTE"]).strip() if pd.notna(np2["VISITANTE"]) else ""
+                                for eq in equipos_reales:
+                                    if eq in {nl2, nv2}:
+                                        pred_w = eq; break
+                                if pred_w: break
+                        if pred_w is not None and pred_w == winner_r_j:
+                            cmp_gl = dj_gv if dj_loc == real_visit_eq else dj_gl
+                            cmp_gv = dj_gl if dj_loc == real_visit_eq else dj_gv
+                            if gl_r == cmp_gl and gv_r == cmp_gv:
+                                pts_j = 10
+                            elif (gl_r - gv_r) == (cmp_gl - cmp_gv):
+                                pts_j = 7
+                            else:
+                                pts_j = 5
+                    elif tiene_alguno_j:
+                        pred_w = dj_loc if dj_gl > dj_gv else (dj_vis if dj_gv > dj_gl else None)
+                        if pred_w is None:
+                            for nid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104), key=int):
+                                np2 = df_jug.loc[nid]
+                                if "LOCAL" not in np2.index or "VISITANTE" not in np2.index:
+                                    continue
+                                nl2 = str(np2["LOCAL"]).strip() if pd.notna(np2["LOCAL"]) else ""
+                                nv2 = str(np2["VISITANTE"]).strip() if pd.notna(np2["VISITANTE"]) else ""
+                                for eq in equipos_reales:
+                                    if eq in {nl2, nv2}:
+                                        pred_w = eq; break
+                                if pred_w: break
+                        if pred_w is not None and pred_w == winner_r_j:
+                            pts_j = 5
+                    else:
+                        if winner_r_j and winner_r_j in eq_bracket_j:
+                            pts_j = 5
+                    # Display
+                    marca_j  = "&#9989;" if pts_j > 0 else "&#10060;"
+                    pts_txt  = f" <span style='color:#0f0'>+{pts_j}pts</span>" if pts_j > 0 else ""
+                    estilo_j = " class='pred-exacto'" if pts_j == 10 else (" class='pred-diff'" if pts_j == 7 else "")
+                    dj_eq_set = {e for e in [dj_loc, dj_vis] if e and e not in ("", "nan")}
+                    extras_j  = {eq: v for eq, v in eq_bracket_j.items() if eq not in dj_eq_set}
+                    nota_j    = ""
+                    if extras_j and not tiene_ambos_j:
+                        partes_j = [f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(extras_j.items())]
+                        nota_j = " [también: " + " | ".join(partes_j) + "]"
+                    if tiene_ambos_j or tiene_alguno_j:
+                        html += f"<p{estilo_j}>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{dj_loc} {dj_gl}-{dj_gv} {dj_vis}{nota_j}</span>{pts_txt}</p>"
+                    elif eq_bracket_j:
+                        partes_b = [f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(eq_bracket_j.items())]
+                        html += f"<p>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{' | '.join(partes_b)}</span>{pts_txt}</p>"
+                    else:
+                        html += f"<p>&#10060; <b>{nombre}:</b> &#10060;</p>"
                 else:
                     if es_eliminatoria and equipos_reales:
                         pred_local_eq = str(pred["LOCAL"]).strip() if "LOCAL" in pred.index and pd.notna(pred["LOCAL"]) else ""
@@ -658,6 +760,11 @@ td:nth-child(3) {{
 
 .pred-exacto {{
     color:#ffd700;
+    font-weight: bold;
+}}
+
+.pred-diff {{
+    color:#00bfff;
     font-weight: bold;
 }}
 
