@@ -253,7 +253,7 @@ def puntuar(maestro, jugador):
                     # ganador incorrecto → 0 pts
 
                 else:
-                    # ¿Aparece el equipo ganador real GANANDO en algún otro cruce predicho?
+                    # ¿Ganador real GANA en otro cruce, o aparece en ronda posterior (empate → penaltis)?
                     if winner_real is not None:
                         encontrado = jugador_ko[
                             (jugador_ko["ID"] != real_id) &
@@ -262,6 +262,14 @@ def puntuar(maestro, jugador):
                                 ((jugador_ko["VISITANTE"] == winner_real) & (jugador_ko["GOLES VISITANTE"] > jugador_ko["GOLES LOCAL"]))
                             )
                         ]
+                        if encontrado.empty:
+                            encontrado = jugador_ko[
+                                (jugador_ko["ID"] > real_id) &
+                                (
+                                    (jugador_ko["LOCAL"]     == winner_real) |
+                                    (jugador_ko["VISITANTE"] == winner_real)
+                                )
+                            ]
                         if not encontrado.empty:
                             total += 5; g += 1
 
@@ -492,6 +500,15 @@ def partidos_por_dia(maestro):
                             v = eq_bracket_j[winner_r_j]
                             if (winner_r_j == v[0] and v[1] > v[2]) or (winner_r_j == v[3] and v[2] > v[1]):
                                 pts_j = 5
+                            else:
+                                for nid in (i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104):
+                                    np2 = df_jug.loc[nid]
+                                    if "LOCAL" not in np2.index or "VISITANTE" not in np2.index:
+                                        continue
+                                    nl2 = str(np2["LOCAL"]).strip() if pd.notna(np2["LOCAL"]) else ""
+                                    nv2 = str(np2["VISITANTE"]).strip() if pd.notna(np2["VISITANTE"]) else ""
+                                    if winner_r_j in {nl2, nv2}:
+                                        pts_j = 5; break
                     # Display
                     marca_j  = "&#9989;" if pts_j > 0 else "&#10060;"
                     pts_txt  = f" <span style='color:#0f0'>+{pts_j}pts</span>" if pts_j > 0 else ""
