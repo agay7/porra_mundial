@@ -253,7 +253,7 @@ def puntuar(maestro, jugador):
                     # ganador incorrecto → 0 pts
 
                 else:
-                    # ¿Ganador real GANA en otro cruce, o aparece en ronda posterior (empate → penaltis)?
+                    # Ganador real GANA en otro cruce, O empata en ronda posterior y luego aparece en ronda aún posterior
                     if winner_real is not None:
                         encontrado = jugador_ko[
                             (jugador_ko["ID"] != real_id) &
@@ -263,13 +263,19 @@ def puntuar(maestro, jugador):
                             )
                         ]
                         if encontrado.empty:
-                            encontrado = jugador_ko[
+                            draw_slots = jugador_ko[
                                 (jugador_ko["ID"] > real_id) &
-                                (
-                                    (jugador_ko["LOCAL"]     == winner_real) |
-                                    (jugador_ko["VISITANTE"] == winner_real)
-                                )
+                                (jugador_ko["GOLES LOCAL"] == jugador_ko["GOLES VISITANTE"]) &
+                                ((jugador_ko["LOCAL"] == winner_real) | (jugador_ko["VISITANTE"] == winner_real))
                             ]
+                            for _, drow in draw_slots.iterrows():
+                                after = jugador_ko[
+                                    (jugador_ko["ID"] > drow["ID"]) &
+                                    ((jugador_ko["LOCAL"] == winner_real) | (jugador_ko["VISITANTE"] == winner_real))
+                                ]
+                                if not after.empty:
+                                    encontrado = after.head(1)
+                                    break
                         if not encontrado.empty:
                             total += 5; g += 1
 
@@ -496,19 +502,27 @@ def partidos_por_dia(maestro):
                             if (winner_r_j == v[0] and v[1] > v[2]) or (winner_r_j == v[3] and v[2] > v[1]):
                                 pts_j = 5
                     else:
-                        if winner_r_j and winner_r_j in eq_bracket_j:
-                            v = eq_bracket_j[winner_r_j]
-                            if (winner_r_j == v[0] and v[1] > v[2]) or (winner_r_j == v[3] and v[2] > v[1]):
-                                pts_j = 5
-                            else:
-                                for nid in (i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104):
-                                    np2 = df_jug.loc[nid]
-                                    if "LOCAL" not in np2.index or "VISITANTE" not in np2.index:
-                                        continue
-                                    nl2 = str(np2["LOCAL"]).strip() if pd.notna(np2["LOCAL"]) else ""
-                                    nv2 = str(np2["VISITANTE"]).strip() if pd.notna(np2["VISITANTE"]) else ""
-                                    if winner_r_j in {nl2, nv2}:
-                                        pts_j = 5; break
+                        if winner_r_j:
+                            for lid2 in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104), key=int):
+                                lp3 = df_jug.loc[lid2]
+                                if "LOCAL" not in lp3.index or "VISITANTE" not in lp3.index:
+                                    continue
+                                ll3 = str(lp3["LOCAL"]).strip() if pd.notna(lp3["LOCAL"]) else ""
+                                lv3 = str(lp3["VISITANTE"]).strip() if pd.notna(lp3["VISITANTE"]) else ""
+                                gl3 = int(lp3["GOLES LOCAL"]); gv3 = int(lp3["GOLES VISITANTE"])
+                                if (ll3 == winner_r_j and gl3 > gv3) or (lv3 == winner_r_j and gv3 > gl3):
+                                    pts_j = 5; break
+                                if winner_r_j in {ll3, lv3} and gl3 == gv3 and int(lid2) > int(pid):
+                                    for lid3 in (i for i in df_jug.index if pd.notna(i) and int(i) > int(lid2) and 73 <= int(i) <= 104):
+                                        lp4 = df_jug.loc[lid3]
+                                        if "LOCAL" not in lp4.index or "VISITANTE" not in lp4.index:
+                                            continue
+                                        nl4 = str(lp4["LOCAL"]).strip() if pd.notna(lp4["LOCAL"]) else ""
+                                        nv4 = str(lp4["VISITANTE"]).strip() if pd.notna(lp4["VISITANTE"]) else ""
+                                        if winner_r_j in {nl4, nv4}:
+                                            pts_j = 5; break
+                                    if pts_j > 0:
+                                        break
                     # Display
                     marca_j  = "&#9989;" if pts_j > 0 else "&#10060;"
                     pts_txt  = f" <span style='color:#0f0'>+{pts_j}pts</span>" if pts_j > 0 else ""
