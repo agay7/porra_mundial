@@ -382,8 +382,8 @@ def partidos_por_dia(maestro):
                     dj_gl,  dj_gv  = gl_a, gv_a
                     tiene_ambos_j = len(com_slot) == 2
                     tiene_alguno_j = len(com_slot) >= 1
-                    # Level 2
-                    if not tiene_ambos_j:
+                    # Level 2 solo cuando hay CERO equipos en el slot directo (igual que puntuar())
+                    if not tiene_alguno_j:
                         for lid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104), key=int):
                             lp = df_jug.loc[lid]
                             if "LOCAL" not in lp.index or "VISITANTE" not in lp.index:
@@ -414,21 +414,10 @@ def partidos_por_dia(maestro):
                                 eq_bracket_j[eq] = (ll2, gl2j, gv2j, lv2)
                     # Ganador real
                     winner_r_j = real_local_eq if gl_r > gv_r else (real_visit_eq if gv_r > gl_r else None)
-                    # Calcular puntos
+                    # Calcular puntos (replicando exactamente puntuar())
                     pts_j = 0
                     if tiene_ambos_j:
                         pred_w = dj_loc if dj_gl > dj_gv else (dj_vis if dj_gv > dj_gl else None)
-                        if pred_w is None:
-                            for nid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104), key=int):
-                                np2 = df_jug.loc[nid]
-                                if "LOCAL" not in np2.index or "VISITANTE" not in np2.index:
-                                    continue
-                                nl2 = str(np2["LOCAL"]).strip() if pd.notna(np2["LOCAL"]) else ""
-                                nv2 = str(np2["VISITANTE"]).strip() if pd.notna(np2["VISITANTE"]) else ""
-                                for eq in equipos_reales:
-                                    if eq in {nl2, nv2}:
-                                        pred_w = eq; break
-                                if pred_w: break
                         if pred_w is not None and pred_w == winner_r_j:
                             cmp_gl = dj_gv if dj_loc == real_visit_eq else dj_gl
                             cmp_gv = dj_gl if dj_loc == real_visit_eq else dj_gv
@@ -440,17 +429,6 @@ def partidos_por_dia(maestro):
                                 pts_j = 5
                     elif tiene_alguno_j:
                         pred_w = dj_loc if dj_gl > dj_gv else (dj_vis if dj_gv > dj_gl else None)
-                        if pred_w is None:
-                            for nid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104), key=int):
-                                np2 = df_jug.loc[nid]
-                                if "LOCAL" not in np2.index or "VISITANTE" not in np2.index:
-                                    continue
-                                nl2 = str(np2["LOCAL"]).strip() if pd.notna(np2["LOCAL"]) else ""
-                                nv2 = str(np2["VISITANTE"]).strip() if pd.notna(np2["VISITANTE"]) else ""
-                                for eq in equipos_reales:
-                                    if eq in {nl2, nv2}:
-                                        pred_w = eq; break
-                                if pred_w: break
                         if pred_w is not None and pred_w == winner_r_j:
                             pts_j = 5
                     else:
