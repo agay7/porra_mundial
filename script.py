@@ -175,15 +175,34 @@ def puntuar(maestro, jugador):
                         total += 7; d += 1
                     else:
                         total += 5; g += 1
-                # ganador incorrecto → 0 pts
+                # empate predicho → el ganador real debe avanzar en otro cruce
+                elif winner_pred is None and winner_real is not None:
+                    encontrado_draw = jugador_ko[
+                        (jugador_ko["ID"] != real_id) &
+                        (
+                            ((jugador_ko["LOCAL"]     == winner_real) & (jugador_ko["GOLES LOCAL"] > jugador_ko["GOLES VISITANTE"])) |
+                            ((jugador_ko["VISITANTE"] == winner_real) & (jugador_ko["GOLES VISITANTE"] > jugador_ko["GOLES LOCAL"]))
+                        )
+                    ]
+                    if not encontrado_draw.empty:
+                        total += 5; g += 1
 
             # ── UN equipo correcto en el mismo ID ────────────────────────────
-            # No se compara el marcador aunque coincida
             elif len(acertados_l1) == 1:
 
                 if winner_pred is not None and winner_pred == winner_real:
                     total += 5; g += 1
-                # ganador incorrecto → 0 pts
+                # ganador incorrecto en slot directo → buscar ganador real en otros cruces
+                elif winner_real is not None:
+                    encontrado_l1 = jugador_ko[
+                        (jugador_ko["ID"] != real_id) &
+                        (
+                            ((jugador_ko["LOCAL"]     == winner_real) & (jugador_ko["GOLES LOCAL"] > jugador_ko["GOLES VISITANTE"])) |
+                            ((jugador_ko["VISITANTE"] == winner_real) & (jugador_ko["GOLES VISITANTE"] > jugador_ko["GOLES LOCAL"]))
+                        )
+                    ]
+                    if not encontrado_l1.empty:
+                        total += 5; g += 1
 
             # ── CERO equipos correctos en el mismo ID ────────────────────────
             else:
@@ -223,13 +242,13 @@ def puntuar(maestro, jugador):
                     # ganador incorrecto → 0 pts
 
                 else:
-                    # ¿Aparece el equipo ganador real en algún otro cruce predicho?
+                    # ¿Aparece el equipo ganador real GANANDO en algún otro cruce predicho?
                     if winner_real is not None:
                         encontrado = jugador_ko[
                             (jugador_ko["ID"] != real_id) &
                             (
-                                (jugador_ko["LOCAL"]     == winner_real) |
-                                (jugador_ko["VISITANTE"] == winner_real)
+                                ((jugador_ko["LOCAL"]     == winner_real) & (jugador_ko["GOLES LOCAL"] > jugador_ko["GOLES VISITANTE"])) |
+                                ((jugador_ko["VISITANTE"] == winner_real) & (jugador_ko["GOLES VISITANTE"] > jugador_ko["GOLES LOCAL"]))
                             )
                         ]
                         if not encontrado.empty:
@@ -398,9 +417,10 @@ def partidos_por_dia(maestro):
                                     tiene_ambos_j = True
                                     tiene_alguno_j = True
                                     break
-                    # Bracket individual
+                    # Bracket individual (excluye slot directo, igual que puntuar())
+                    # Si el equipo aparece en varios slots, se prefiere el slot donde GANA
                     eq_bracket_j = {}
-                    for lid in sorted((i for i in df_jug.index if pd.notna(i) and 73 <= int(i) <= 104), key=int):
+                    for lid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104), key=int):
                         lp2 = df_jug.loc[lid]
                         if "LOCAL" not in lp2.index or "VISITANTE" not in lp2.index:
                             continue
@@ -410,8 +430,10 @@ def partidos_por_dia(maestro):
                             continue
                         gl2j = int(lp2["GOLES LOCAL"]); gv2j = int(lp2["GOLES VISITANTE"])
                         for eq in equipos_reales:
-                            if eq in {ll2, lv2} and eq not in eq_bracket_j:
-                                eq_bracket_j[eq] = (ll2, gl2j, gv2j, lv2)
+                            if eq in {ll2, lv2}:
+                                gana = (eq == ll2 and gl2j > gv2j) or (eq == lv2 and gv2j > gl2j)
+                                if eq not in eq_bracket_j or gana:
+                                    eq_bracket_j[eq] = (ll2, gl2j, gv2j, lv2)
                     # Ganador real
                     winner_r_j = real_local_eq if gl_r > gv_r else (real_visit_eq if gv_r > gl_r else None)
                     # Calcular puntos (replicando exactamente puntuar())
@@ -427,13 +449,23 @@ def partidos_por_dia(maestro):
                                 pts_j = 7
                             else:
                                 pts_j = 5
+                        elif pred_w is None and winner_r_j and winner_r_j in eq_bracket_j:
+                            v = eq_bracket_j[winner_r_j]
+                            if (winner_r_j == v[0] and v[1] > v[2]) or (winner_r_j == v[3] and v[2] > v[1]):
+                                pts_j = 5
                     elif tiene_alguno_j:
                         pred_w = dj_loc if dj_gl > dj_gv else (dj_vis if dj_gv > dj_gl else None)
                         if pred_w is not None and pred_w == winner_r_j:
                             pts_j = 5
+                        elif winner_r_j and winner_r_j in eq_bracket_j:
+                            v = eq_bracket_j[winner_r_j]
+                            if (winner_r_j == v[0] and v[1] > v[2]) or (winner_r_j == v[3] and v[2] > v[1]):
+                                pts_j = 5
                     else:
                         if winner_r_j and winner_r_j in eq_bracket_j:
-                            pts_j = 5
+                            v = eq_bracket_j[winner_r_j]
+                            if (winner_r_j == v[0] and v[1] > v[2]) or (winner_r_j == v[3] and v[2] > v[1]):
+                                pts_j = 5
                     # Display
                     marca_j  = "&#9989;" if pts_j > 0 else "&#10060;"
                     pts_txt  = f" <span style='color:#0f0'>+{pts_j}pts</span>" if pts_j > 0 else ""
