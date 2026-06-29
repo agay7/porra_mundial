@@ -177,11 +177,12 @@ def puntuar(maestro, jugador):
                         total += 5; g += 1
                 # empate predicho → el ganador real debe avanzar en otro cruce
                 elif winner_pred is None and winner_real is not None:
+                    # Empate: el ganador real debe APARECER en rondas posteriores (avanzó por penaltis)
                     encontrado_draw = jugador_ko[
-                        (jugador_ko["ID"] != real_id) &
+                        (jugador_ko["ID"] > real_id) &
                         (
-                            ((jugador_ko["LOCAL"]     == winner_real) & (jugador_ko["GOLES LOCAL"] > jugador_ko["GOLES VISITANTE"])) |
-                            ((jugador_ko["VISITANTE"] == winner_real) & (jugador_ko["GOLES VISITANTE"] > jugador_ko["GOLES LOCAL"]))
+                            (jugador_ko["LOCAL"]     == winner_real) |
+                            (jugador_ko["VISITANTE"] == winner_real)
                         )
                     ]
                     if not encontrado_draw.empty:
@@ -192,15 +193,25 @@ def puntuar(maestro, jugador):
 
                 if winner_pred is not None and winner_pred == winner_real:
                     total += 5; g += 1
-                # ganador incorrecto en slot directo → buscar ganador real en otros cruces
                 elif winner_real is not None:
-                    encontrado_l1 = jugador_ko[
-                        (jugador_ko["ID"] != real_id) &
-                        (
-                            ((jugador_ko["LOCAL"]     == winner_real) & (jugador_ko["GOLES LOCAL"] > jugador_ko["GOLES VISITANTE"])) |
-                            ((jugador_ko["VISITANTE"] == winner_real) & (jugador_ko["GOLES VISITANTE"] > jugador_ko["GOLES LOCAL"]))
-                        )
-                    ]
+                    if winner_pred is None:
+                        # Empate: aparición en ronda posterior basta (avanzó por penaltis)
+                        encontrado_l1 = jugador_ko[
+                            (jugador_ko["ID"] > real_id) &
+                            (
+                                (jugador_ko["LOCAL"]     == winner_real) |
+                                (jugador_ko["VISITANTE"] == winner_real)
+                            )
+                        ]
+                    else:
+                        # Ganador equivocado: debe GANAR en otro cruce
+                        encontrado_l1 = jugador_ko[
+                            (jugador_ko["ID"] != real_id) &
+                            (
+                                ((jugador_ko["LOCAL"]     == winner_real) & (jugador_ko["GOLES LOCAL"] > jugador_ko["GOLES VISITANTE"])) |
+                                ((jugador_ko["VISITANTE"] == winner_real) & (jugador_ko["GOLES VISITANTE"] > jugador_ko["GOLES LOCAL"]))
+                            )
+                        ]
                     if not encontrado_l1.empty:
                         total += 5; g += 1
 
@@ -449,14 +460,29 @@ def partidos_por_dia(maestro):
                                 pts_j = 7
                             else:
                                 pts_j = 5
-                        elif pred_w is None and winner_r_j and winner_r_j in eq_bracket_j:
-                            v = eq_bracket_j[winner_r_j]
-                            if (winner_r_j == v[0] and v[1] > v[2]) or (winner_r_j == v[3] and v[2] > v[1]):
-                                pts_j = 5
+                        elif pred_w is None and winner_r_j:
+                            for nid in (i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104):
+                                np2 = df_jug.loc[nid]
+                                if "LOCAL" not in np2.index or "VISITANTE" not in np2.index:
+                                    continue
+                                nl2 = str(np2["LOCAL"]).strip() if pd.notna(np2["LOCAL"]) else ""
+                                nv2 = str(np2["VISITANTE"]).strip() if pd.notna(np2["VISITANTE"]) else ""
+                                if winner_r_j in {nl2, nv2}:
+                                    pts_j = 5; break
                     elif tiene_alguno_j:
                         pred_w = dj_loc if dj_gl > dj_gv else (dj_vis if dj_gv > dj_gl else None)
                         if pred_w is not None and pred_w == winner_r_j:
                             pts_j = 5
+                        elif pred_w is None and winner_r_j:
+                            # Empate: aparición en ronda posterior basta
+                            for nid in (i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104):
+                                np2 = df_jug.loc[nid]
+                                if "LOCAL" not in np2.index or "VISITANTE" not in np2.index:
+                                    continue
+                                nl2 = str(np2["LOCAL"]).strip() if pd.notna(np2["LOCAL"]) else ""
+                                nv2 = str(np2["VISITANTE"]).strip() if pd.notna(np2["VISITANTE"]) else ""
+                                if winner_r_j in {nl2, nv2}:
+                                    pts_j = 5; break
                         elif winner_r_j and winner_r_j in eq_bracket_j:
                             v = eq_bracket_j[winner_r_j]
                             if (winner_r_j == v[0] and v[1] > v[2]) or (winner_r_j == v[3] and v[2] > v[1]):
