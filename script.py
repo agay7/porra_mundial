@@ -690,7 +690,7 @@ def partidos_por_dia(maestro, penaltis=None):
                         disp_equipos = {e for e in [disp_local, disp_visit] if e and e not in ("", "nan")}
                         extras = {eq: v for eq, v in equipos_en_bracket.items() if eq not in disp_equipos}
                         if extras and not tiene_ambos:
-                            partes = [f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(extras.items())]
+                            partes = [f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(extras.items())]
                             nota_extras = " [también: " + " | ".join(partes) + "]"
                         else:
                             nota_extras = ""
@@ -700,7 +700,7 @@ def partidos_por_dia(maestro, penaltis=None):
                         elif tiene_alguno:
                             html += f"<p><b>{nombre}:</b> <span style='color:#aaa'>{disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}{nota_extras}</span></p>"
                         elif equipos_en_bracket:
-                            partes = [f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(equipos_en_bracket.items())]
+                            partes = [f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(equipos_en_bracket.items())]
                             html += f"<p><b>{nombre}:</b> <span style='color:#aaa'>{' | '.join(partes)}</span></p>"
                         else:
                             html += f"<p style='color:#666'><b>{nombre}:</b> &#10060;</p>"
