@@ -81,7 +81,22 @@ def puntuar_extras(maestro, jugador):
     return puntos_extra
 
 
-def puntuar(maestro, jugador):
+def cargar_penaltis():
+    """Lee data/penaltis.json: {"<ID>": "Equipo ganador"} para partidos de eliminatoria empatados a 90'."""
+    ruta = Path("data/penaltis.json")
+    if ruta.exists():
+        try:
+            with open(ruta, "r", encoding="utf-8-sig") as f:
+                data = json.load(f)
+            return {str(k): str(v).strip() for k, v in data.items()}
+        except Exception as e:
+            print(f"No se pudo leer penaltis.json: {e}")
+            return {}
+    return {}
+
+
+def puntuar(maestro, jugador, penaltis=None):
+    penaltis = penaltis or {}
 
     total, g, d, e = 0, 0, 0, 0
 
@@ -138,13 +153,14 @@ def puntuar(maestro, jugador):
             pred_visit = str(apuesta["VISITANTE"]).strip()
             equipos_reales = {real_local, real_visit}
 
-            # Ganador real (tras 90' + prórroga)
+            # Ganador real (tras 90' + prórroga, o penaltis si hubo empate)
             if gl_r > gv_r:
                 winner_real = real_local
             elif gv_r > gl_r:
                 winner_real = real_visit
             else:
-                winner_real = None
+                pen_winner = penaltis.get(str(real_id), "")
+                winner_real = pen_winner if pen_winner else None
 
             # Ganador predicho en el mismo ID
             if gl_a > gv_a:
@@ -186,7 +202,13 @@ def puntuar(maestro, jugador):
                         )
                     ]
                     if not encontrado_draw.empty:
-                        total += 5; g += 1
+                        # Acertó quién avanza por penaltis: comprobar también el marcador del empate
+                        if gl_r == gl_a and gv_r == gv_a:
+                            total += 10; e += 1
+                        elif (gl_r - gv_r) == (gl_a - gv_a):
+                            total += 7; d += 1
+                        else:
+                            total += 5; g += 1
 
             # ── UN equipo correcto en el mismo ID ────────────────────────────
             elif len(acertados_l1) == 1:
@@ -250,6 +272,23 @@ def puntuar(maestro, jugador):
                             total += 7; d += 1
                         else:
                             total += 5; g += 1
+                    elif winner_l2 is None and winner_real is not None:
+                        # Empate predicho en el cruce L2 → ¿el ganador real avanza después?
+                        l2_id = partido_l2["ID"]
+                        encontrado_draw_l2 = jugador_ko[
+                            (jugador_ko["ID"] > l2_id) &
+                            (
+                                (jugador_ko["LOCAL"]     == winner_real) |
+                                (jugador_ko["VISITANTE"] == winner_real)
+                            )
+                        ]
+                        if not encontrado_draw_l2.empty:
+                            if gl_r == gl_l2 and gv_r == gv_l2:
+                                total += 10; e += 1
+                            elif (gl_r - gv_r) == (gl_l2 - gv_l2):
+                                total += 7; d += 1
+                            else:
+                                total += 5; g += 1
                     # ganador incorrecto → 0 pts
 
                 else:
@@ -306,7 +345,8 @@ def guardar_historico(df):
         json.dump(nuevo, f, ensure_ascii=False, indent=2)
 
 
-def partidos_por_dia(maestro):
+def partidos_por_dia(maestro, penaltis=None):
+    penaltis = penaltis or {}
 
     maestro["Fecha"] = pd.to_datetime(maestro["Fecha"], dayfirst=True, errors="coerce")
     maestro["Hora"]  = pd.to_datetime(maestro["Hora"],  format="%H:%M", errors="coerce")
@@ -375,9 +415,11 @@ def partidos_por_dia(maestro):
             if jugado:
                 gl_r = int(partido["GOLES LOCAL"])
                 gv_r = int(partido["GOLES VISITANTE"])
+                pen_winner_txt = penaltis.get(str(int(partido["ID"])), "")
+                pen_txt = f" <small>({pen_winner_txt} gana en penaltis)</small>" if gl_r == gv_r and pen_winner_txt else ""
                 resultado_txt = (
                     f"<span class='resultado'>"
-                    f"{partido['LOCAL']} <b>{gl_r} - {gv_r}</b> {partido['VISITANTE']}"
+                    f"{partido['LOCAL']} <b>{gl_r} - {gv_r}</b> {partido['VISITANTE']}{pen_txt}"
                     f"</span>"
                 )
                 ganador_r = 1 if gl_r > gv_r else -1 if gv_r > gl_r else 0
@@ -424,6 +466,7 @@ def partidos_por_dia(maestro):
                     com_slot = equipos_reales & eq_slot
                     dj_loc, dj_vis = pj_local, pj_visit
                     dj_gl,  dj_gv  = gl_a, gv_a
+                    dj_id = pid
                     tiene_ambos_j = len(com_slot) == 2
                     tiene_alguno_j = len(com_slot) >= 1
                     # Level 2 solo cuando hay CERO equipos en el slot directo (igual que puntuar())
@@ -439,6 +482,7 @@ def partidos_por_dia(maestro):
                                     dj_loc, dj_vis = ll, lv
                                     dj_gl = int(lp["GOLES LOCAL"])
                                     dj_gv = int(lp["GOLES VISITANTE"])
+                                    dj_id = lid
                                     tiene_ambos_j = True
                                     tiene_alguno_j = True
                                     break
@@ -459,8 +503,14 @@ def partidos_por_dia(maestro):
                                 gana = (eq == ll2 and gl2j > gv2j) or (eq == lv2 and gv2j > gl2j)
                                 if eq not in eq_bracket_j or gana:
                                     eq_bracket_j[eq] = (ll2, gl2j, gv2j, lv2)
-                    # Ganador real
-                    winner_r_j = real_local_eq if gl_r > gv_r else (real_visit_eq if gv_r > gl_r else None)
+                    # Ganador real (90' o penaltis si hubo empate)
+                    if gl_r > gv_r:
+                        winner_r_j = real_local_eq
+                    elif gv_r > gl_r:
+                        winner_r_j = real_visit_eq
+                    else:
+                        pen_winner_j = penaltis.get(str(int(partido["ID"])), "")
+                        winner_r_j = pen_winner_j if pen_winner_j else None
                     # Calcular puntos (replicando exactamente puntuar())
                     pts_j = 0
                     if tiene_ambos_j:
@@ -475,14 +525,20 @@ def partidos_por_dia(maestro):
                             else:
                                 pts_j = 5
                         elif pred_w is None and winner_r_j:
-                            for nid in (i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104):
+                            for nid in (i for i in df_jug.index if pd.notna(i) and int(i) > int(dj_id) and 73 <= int(i) <= 104):
                                 np2 = df_jug.loc[nid]
                                 if "LOCAL" not in np2.index or "VISITANTE" not in np2.index:
                                     continue
                                 nl2 = str(np2["LOCAL"]).strip() if pd.notna(np2["LOCAL"]) else ""
                                 nv2 = str(np2["VISITANTE"]).strip() if pd.notna(np2["VISITANTE"]) else ""
                                 if winner_r_j in {nl2, nv2}:
-                                    pts_j = 5; break
+                                    if gl_r == dj_gl and gv_r == dj_gv:
+                                        pts_j = 10
+                                    elif (gl_r - gv_r) == (dj_gl - dj_gv):
+                                        pts_j = 7
+                                    else:
+                                        pts_j = 5
+                                    break
                     elif tiene_alguno_j:
                         pred_w = dj_loc if dj_gl > dj_gv else (dj_vis if dj_gv > dj_gl else None)
                         if pred_w is not None and pred_w == winner_r_j:
@@ -637,6 +693,7 @@ def partidos_por_dia(maestro):
 def main():
 
     maestro = pd.read_excel(RUTA_MAESTRO, sheet_name="Datos")
+    penaltis = cargar_penaltis()
 
     ranking = []
 
@@ -647,7 +704,7 @@ def main():
 
         jugador = pd.read_excel(archivo, sheet_name="Datos")
 
-        puntos, g, d, e = puntuar(maestro, jugador)
+        puntos, g, d, e = puntuar(maestro, jugador, penaltis)
         extras = puntuar_extras(maestro, jugador) if FASE_GRUPOS_TERMINADA else 0
 
         ranking.append({
@@ -706,7 +763,7 @@ def main():
     ]]
 
     html_table = df.to_html(index=False, escape=False)
-    partidos_html = partidos_por_dia(maestro)
+    partidos_html = partidos_por_dia(maestro, penaltis)
 
     now = datetime.now().strftime("%d/%m %H:%M:%S")
 

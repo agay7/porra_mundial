@@ -19,10 +19,10 @@ def pred(id, local, visitante, gl, gv):
     return {"ID": id, "LOCAL": local, "VISITANTE": visitante,
             "GOLES LOCAL": gl, "GOLES VISITANTE": gv}
 
-def run(name, real_rows, pred_rows, expected):
+def run(name, real_rows, pred_rows, expected, penaltis=None):
     maestro = pd.DataFrame(real_rows)
     jugador = pd.DataFrame(pred_rows)
-    total, *_ = puntuar(maestro, jugador)
+    total, *_ = puntuar(maestro, jugador, penaltis)
     ok = "✅" if total == expected else "❌"
     if total != expected:
         print(f"{ok} {name}: esperado={expected}, obtenido={total}")
@@ -37,9 +37,9 @@ R = [real(85, "Brasil", "Japón", 2, 1)]
 passed = failed = 0
 results = []
 
-def t(name, pred_rows, expected):
+def t(name, pred_rows, expected, penaltis=None):
     global passed, failed
-    ok = run(name, R, pred_rows, expected)
+    ok = run(name, R, pred_rows, expected, penaltis)
     if ok: passed += 1
     else:  failed += 1
 
@@ -139,6 +139,78 @@ t("Brasil EMPATA en ronda posterior + Turquía avanza (no Brasil) → 0pts  [cas
 t("Sin ningún equipo real en ningún slot → 0pts",
   [pred(85, "Suiza", "Chile", 3, 0),
    pred(82, "Argentina", "Francia", 2, 1)], 0)
+
+print("\n═══ EMPATE REAL 1-1 + GANADOR POR PENALTIS (data/penaltis.json) ═══")
+
+# Partido real: Alemania 1-1 Paraguay (ID 75), Paraguay gana en penaltis
+RP = [real(75, "Alemania", "Paraguay", 1, 1)]
+PEN = {"75": "Paraguay"}
+
+def tp(name, pred_rows, expected, penaltis=PEN):
+    global passed, failed
+    ok = run(name, RP, pred_rows, expected, penaltis)
+    if ok: passed += 1
+    else:  failed += 1
+
+tp("2 equipos, predice Paraguay gana 2-1 → 5pts (ganador correcto, no exacto pq 1-1 real)",
+   [pred(75, "Alemania", "Paraguay", 1, 2)], 5)
+
+tp("2 equipos, predice Alemania gana (incorrecto) → 0pts",
+   [pred(75, "Alemania", "Paraguay", 2, 1)], 0)
+
+tp("2 equipos, predice empate 1-1 exacto + Paraguay avanza en ronda posterior → 10pts (exacto)",
+   [pred(75, "Alemania", "Paraguay", 1, 1),
+    pred(92, "Paraguay", "Francia", 1, 0)], 10)
+
+tp("2 equipos, predice empate 1-1 + Alemania avanza (incorrecto) → 0pts",
+   [pred(75, "Alemania", "Paraguay", 1, 1),
+    pred(92, "Alemania", "Francia", 1, 0)], 0)
+
+tp("1 equipo (Paraguay en slot), Paraguay gana 2-0 (correcto) → 5pts",
+   [pred(75, "Corea", "Paraguay", 0, 2)], 5)
+
+tp("0 equipos en slot, Paraguay GANA en otro cruce → 5pts",
+   [pred(75, "Suiza", "Chile", 2, 0),
+    pred(80, "Países Bajos", "Paraguay", 1, 2)], 5)
+
+tp("0 equipos en slot, Paraguay PIERDE en otro cruce → 0pts",
+   [pred(75, "Suiza", "Chile", 2, 0),
+    pred(80, "Francia", "Paraguay", 2, 0)], 0)
+
+tp("Sin penaltis.json (dict vacío) → empate real no se puede puntuar, 0pts",
+   [pred(75, "Alemania", "Paraguay", 1, 2)], 0, penaltis={})
+
+print("\n═══ EMPATE PREDICHO + ACIERTA AVANCE: BONUS EXACTO/DIFERENCIA ═══")
+
+tp("Empate EXACTO 1-1 (igual al real) + Paraguay avanza → 10pts",
+   [pred(75, "Alemania", "Paraguay", 1, 1),
+    pred(92, "Paraguay", "Francia", 1, 0)], 10)
+
+tp("Empate 0-0 (diferencia 0, igual que el real 1-1) + Paraguay avanza → 7pts",
+   [pred(75, "Alemania", "Paraguay", 0, 0),
+    pred(92, "Paraguay", "Francia", 1, 0)], 7)
+
+tp("Empate 3-3 (diferencia 0) + Paraguay avanza → 7pts",
+   [pred(75, "Alemania", "Paraguay", 3, 3),
+    pred(92, "Paraguay", "Francia", 1, 0)], 7)
+
+tp("Empate exacto 1-1 pero NO acierta avance (Alemania avanza) → 0pts",
+   [pred(75, "Alemania", "Paraguay", 1, 1),
+    pred(92, "Alemania", "Francia", 1, 0)], 0)
+
+tp("Level 2 — empate exacto 1-1 en otro slot + Paraguay avanza después → 10pts",
+   [pred(75, "Suiza", "Chile", 2, 0),
+    pred(82, "Alemania", "Paraguay", 1, 1),
+    pred(92, "Paraguay", "Francia", 1, 0)], 10)
+
+tp("Level 2 — empate 2-2 (diferencia 0) en otro slot + Paraguay avanza después → 7pts",
+   [pred(75, "Suiza", "Chile", 2, 0),
+    pred(82, "Alemania", "Paraguay", 2, 2),
+    pred(92, "Paraguay", "Francia", 1, 0)], 7)
+
+tp("Level 2 — empate en otro slot pero Paraguay NO avanza después → 0pts",
+   [pred(75, "Suiza", "Chile", 2, 0),
+    pred(82, "Alemania", "Paraguay", 1, 1)], 0)
 
 print(f"\n{'═'*50}")
 print(f"  Resultado: {passed} ✅  /  {failed} ❌  de {passed+failed} tests")
