@@ -345,6 +345,14 @@ def guardar_historico(df):
         json.dump(nuevo, f, ensure_ascii=False, indent=2)
 
 
+def marcar_eliminado(equipo, winner_real, equipos_reales):
+    """Tacha el nombre del equipo si es uno de los dos equipos reales del partido
+    y NO es el ganador real (es decir, quedó eliminado de verdad)."""
+    if equipo in equipos_reales and winner_real is not None and equipo != winner_real:
+        return f"<s>{equipo}</s>"
+    return equipo
+
+
 def fmt_resultado(eq, local, gl, gv, visit, lid, df_jug):
     """Formatea 'Local X-Y Visit' tachando el cruce ENTERO si 'eq' no pasa de fase ahí.
     Si es empate, comprueba en el propio bracket del participante si 'eq' aparece en
@@ -609,7 +617,9 @@ def partidos_por_dia(maestro, penaltis=None):
                         partes_j = [f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(extras_j.items())]
                         nota_j = " [también: " + " | ".join(partes_j) + "]"
                     if tiene_ambos_j or tiene_alguno_j:
-                        html += f"<p{estilo_j}>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{dj_loc} {dj_gl}-{dj_gv} {dj_vis}{nota_j}</span>{pts_txt}</p>"
+                        dj_loc_disp = marcar_eliminado(dj_loc, winner_r_j, equipos_reales)
+                        dj_vis_disp = marcar_eliminado(dj_vis, winner_r_j, equipos_reales)
+                        html += f"<p{estilo_j}>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{dj_loc_disp} {dj_gl}-{dj_gv} {dj_vis_disp}{nota_j}</span>{pts_txt}</p>"
                     elif eq_bracket_j:
                         partes_b = [f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(eq_bracket_j.items())]
                         html += f"<p>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{' | '.join(partes_b)}</span>{pts_txt}</p>"
