@@ -345,6 +345,29 @@ def guardar_historico(df):
         json.dump(nuevo, f, ensure_ascii=False, indent=2)
 
 
+def equipos_eliminados(maestro, penaltis):
+    """Retorna el conjunto de equipos ya eliminados en el cuadro real de eliminatorias."""
+    eliminados = set()
+    ko = maestro[(maestro["ID"] >= 73) & (maestro["ID"] <= 104)]
+    for _, real in ko.iterrows():
+        if int(real.get("JUGADO", 0)) != 1:
+            continue
+        local = str(real["LOCAL"]).strip() if pd.notna(real["LOCAL"]) else ""
+        visit = str(real["VISITANTE"]).strip() if pd.notna(real["VISITANTE"]) else ""
+        gl_r  = real["GOLES LOCAL"]
+        gv_r  = real["GOLES VISITANTE"]
+        rid   = int(real["ID"])
+        if gl_r > gv_r:
+            eliminados.add(visit)
+        elif gv_r > gl_r:
+            eliminados.add(local)
+        else:
+            pen = penaltis.get(str(rid), "")
+            if pen:
+                eliminados.add(visit if pen == local else local)
+    return eliminados
+
+
 def marcar_eliminado(equipo, winner_real, equipos_reales):
     """Tacha el nombre del equipo si es uno de los dos equipos reales del partido
     y NO es el ganador real (es decir, quedó eliminado de verdad)."""
@@ -374,6 +397,7 @@ def fmt_resultado(eq, local, gl, gv, visit, lid, df_jug):
 
 def partidos_por_dia(maestro, penaltis=None):
     penaltis = penaltis or {}
+    elim_reales = equipos_eliminados(maestro, penaltis)
 
     maestro["Fecha"] = pd.to_datetime(maestro["Fecha"], dayfirst=True, errors="coerce")
     maestro["Hora"]  = pd.to_datetime(maestro["Hora"],  format="%H:%M", errors="coerce")
@@ -614,14 +638,14 @@ def partidos_por_dia(maestro, penaltis=None):
                     extras_j  = {eq: v for eq, v in eq_bracket_j.items() if eq not in dj_eq_set}
                     nota_j    = ""
                     if extras_j and not tiene_ambos_j:
-                        partes_j = [f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(extras_j.items())]
+                        partes_j = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if eq in elim_reales else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(extras_j.items())]
                         nota_j = " [también: " + " | ".join(partes_j) + "]"
                     if tiene_ambos_j or tiene_alguno_j:
                         dj_loc_disp = marcar_eliminado(dj_loc, winner_r_j, equipos_reales)
                         dj_vis_disp = marcar_eliminado(dj_vis, winner_r_j, equipos_reales)
                         html += f"<p{estilo_j}>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{dj_loc_disp} {dj_gl}-{dj_gv} {dj_vis_disp}{nota_j}</span>{pts_txt}</p>"
                     elif eq_bracket_j:
-                        partes_b = [f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(eq_bracket_j.items())]
+                        partes_b = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if eq in elim_reales else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(eq_bracket_j.items())]
                         html += f"<p>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{' | '.join(partes_b)}</span>{pts_txt}</p>"
                     else:
                         html += f"<p>&#10060; <b>{nombre}:</b> &#10060;</p>"
@@ -690,7 +714,7 @@ def partidos_por_dia(maestro, penaltis=None):
                         disp_equipos = {e for e in [disp_local, disp_visit] if e and e not in ("", "nan")}
                         extras = {eq: v for eq, v in equipos_en_bracket.items() if eq not in disp_equipos}
                         if extras and not tiene_ambos:
-                            partes = [f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(extras.items())]
+                            partes = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if eq in elim_reales else f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(extras.items())]
                             nota_extras = " [también: " + " | ".join(partes) + "]"
                         else:
                             nota_extras = ""
@@ -700,7 +724,7 @@ def partidos_por_dia(maestro, penaltis=None):
                         elif tiene_alguno:
                             html += f"<p><b>{nombre}:</b> <span style='color:#aaa'>{disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}{nota_extras}</span></p>"
                         elif equipos_en_bracket:
-                            partes = [f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(equipos_en_bracket.items())]
+                            partes = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if eq in elim_reales else f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(equipos_en_bracket.items())]
                             html += f"<p><b>{nombre}:</b> <span style='color:#aaa'>{' | '.join(partes)}</span></p>"
                         else:
                             html += f"<p style='color:#666'><b>{nombre}:</b> &#10060;</p>"
