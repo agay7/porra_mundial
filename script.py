@@ -345,11 +345,32 @@ def guardar_historico(df):
         json.dump(nuevo, f, ensure_ascii=False, indent=2)
 
 
-def sub_imposible(eq, v, elim_reales, _df_jug=None):
-    """True si el sub-cruce debe tacharse: el equipo rastreado (eq) está eliminado,
-    o cualquiera de los equipos del sub-cruce ya está eliminado en la competición real."""
-    local, _gl, _gv, visit, _lid = v
-    return eq in elim_reales or local in elim_reales or visit in elim_reales
+def sub_imposible(eq, v, elim_reales, df_jug=None):
+    """Tachar el sub-cruce si:
+    - el equipo rastreado (eq) ya está eliminado, o
+    - algún equipo del sub-cruce está eliminado y GANA (claramente imposible), o
+    - es empate y el equipo eliminado AVANZA en la siguiente ronda del bracket del participante."""
+    local, gl, gv, visit, lid = v
+    if eq in elim_reales:
+        return True
+    for elim in (local, visit):
+        if elim not in elim_reales:
+            continue
+        if gl > gv and elim == local:
+            return True   # equipo eliminado gana → imposible
+        if gv > gl and elim == visit:
+            return True   # equipo eliminado gana → imposible
+        if gl == gv and df_jug is not None and lid is not None:
+            # Empate: mirar si el equipo eliminado avanza en el bracket del participante
+            for nid in (i for i in df_jug.index if pd.notna(i) and int(i) > int(lid) and 73 <= int(i) <= 104):
+                np_ = df_jug.loc[nid]
+                if "LOCAL" not in np_.index or "VISITANTE" not in np_.index:
+                    continue
+                nl = str(np_["LOCAL"]).strip() if pd.notna(np_["LOCAL"]) else ""
+                nv = str(np_["VISITANTE"]).strip() if pd.notna(np_["VISITANTE"]) else ""
+                if elim in (nl, nv):
+                    return True  # avanza en el bracket → imposible → tachar
+    return False
 
 
 def equipos_eliminados(maestro, penaltis):
