@@ -345,6 +345,13 @@ def guardar_historico(df):
         json.dump(nuevo, f, ensure_ascii=False, indent=2)
 
 
+def sub_imposible(eq, v, elim_reales, _df_jug=None):
+    """True si el sub-cruce debe tacharse: el equipo rastreado (eq) está eliminado,
+    o cualquiera de los equipos del sub-cruce ya está eliminado en la competición real."""
+    local, _gl, _gv, visit, _lid = v
+    return eq in elim_reales or local in elim_reales or visit in elim_reales
+
+
 def equipos_eliminados(maestro, penaltis):
     """Retorna el conjunto de equipos ya eliminados en el cuadro real de eliminatorias."""
     eliminados = set()
@@ -638,14 +645,14 @@ def partidos_por_dia(maestro, penaltis=None):
                     extras_j  = {eq: v for eq, v in eq_bracket_j.items() if eq not in dj_eq_set}
                     nota_j    = ""
                     if extras_j and not tiene_ambos_j:
-                        partes_j = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if (eq in elim_reales or v[0] in elim_reales or v[3] in elim_reales) else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(extras_j.items())]
+                        partes_j = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if sub_imposible(eq, v, elim_reales, df_jug) else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(extras_j.items())]
                         nota_j = " [también: " + " | ".join(partes_j) + "]"
                     if tiene_ambos_j or tiene_alguno_j:
                         dj_loc_disp = marcar_eliminado(dj_loc, winner_r_j, equipos_reales)
                         dj_vis_disp = marcar_eliminado(dj_vis, winner_r_j, equipos_reales)
                         html += f"<p{estilo_j}>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{dj_loc_disp} {dj_gl}-{dj_gv} {dj_vis_disp}{nota_j}</span>{pts_txt}</p>"
                     elif eq_bracket_j:
-                        partes_b = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if (eq in elim_reales or v[0] in elim_reales or v[3] in elim_reales) else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(eq_bracket_j.items())]
+                        partes_b = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if sub_imposible(eq, v, elim_reales, df_jug) else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(eq_bracket_j.items())]
                         html += f"<p>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{' | '.join(partes_b)}</span>{pts_txt}</p>"
                     else:
                         html += f"<p>&#10060; <b>{nombre}:</b> &#10060;</p>"
@@ -714,7 +721,7 @@ def partidos_por_dia(maestro, penaltis=None):
                         disp_equipos = {e for e in [disp_local, disp_visit] if e and e not in ("", "nan")}
                         extras = {eq: v for eq, v in equipos_en_bracket.items() if eq not in disp_equipos}
                         if extras and not tiene_ambos:
-                            partes = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if (eq in elim_reales or v[0] in elim_reales or v[3] in elim_reales) else f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(extras.items())]
+                            partes = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if sub_imposible(eq, v, elim_reales, df_jug) else f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(extras.items())]
                             nota_extras = " [también: " + " | ".join(partes) + "]"
                         else:
                             nota_extras = ""
@@ -724,7 +731,7 @@ def partidos_por_dia(maestro, penaltis=None):
                         elif tiene_alguno:
                             html += f"<p><b>{nombre}:</b> <span style='color:#aaa'>{disp_local} {disp_gl}-{disp_gv} {disp_visit}{clasificado}{nota_extras}</span></p>"
                         elif equipos_en_bracket:
-                            partes = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if (eq in elim_reales or v[0] in elim_reales or v[3] in elim_reales) else f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(equipos_en_bracket.items())]
+                            partes = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if sub_imposible(eq, v, elim_reales, df_jug) else f"{eq}: {v[0]} {v[1]}-{v[2]} {v[3]}" for eq, v in sorted(equipos_en_bracket.items())]
                             html += f"<p><b>{nombre}:</b> <span style='color:#aaa'>{' | '.join(partes)}</span></p>"
                         else:
                             html += f"<p style='color:#666'><b>{nombre}:</b> &#10060;</p>"
