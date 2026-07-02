@@ -216,8 +216,8 @@ def puntuar(maestro, jugador, penaltis=None):
                 if winner_pred is not None and winner_pred == winner_real:
                     total += 5; g += 1
                 elif winner_real is not None:
-                    if winner_pred is None:
-                        # Empate: aparición en ronda posterior basta (avanzó por penaltis)
+                    if winner_pred is None and bool(acertados_l1 & {winner_real}):
+                        # Empate predicho Y el equipo correcto ES el ganador: aparecer en ronda posterior basta
                         encontrado_l1 = jugador_ko[
                             (jugador_ko["ID"] > real_id) &
                             (
@@ -226,7 +226,7 @@ def puntuar(maestro, jugador, penaltis=None):
                             )
                         ]
                     else:
-                        # Ganador equivocado: debe GANAR en otro cruce
+                        # Ganador equivocado O empate predicho con equipo correcto = perdedor: debe GANAR en otro cruce
                         encontrado_l1 = jugador_ko[
                             (jugador_ko["ID"] != real_id) &
                             (
@@ -622,8 +622,8 @@ def partidos_por_dia(maestro, penaltis=None):
                         pred_w = dj_loc if dj_gl > dj_gv else (dj_vis if dj_gv > dj_gl else None)
                         if pred_w is not None and pred_w == winner_r_j:
                             pts_j = 5
-                        elif pred_w is None and winner_r_j:
-                            # Empate: aparición en ronda posterior basta
+                        elif pred_w is None and winner_r_j and winner_r_j in com_slot:
+                            # Empate predicho Y el equipo correcto ES el ganador: aparecer en ronda posterior basta
                             for nid in (i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104):
                                 np2 = df_jug.loc[nid]
                                 if "LOCAL" not in np2.index or "VISITANTE" not in np2.index:

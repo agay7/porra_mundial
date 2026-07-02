@@ -100,6 +100,14 @@ t("Brasil en slot, empate 2-2 + Brasil aparece en ronda posterior → 5pts  [cas
 t("Brasil en slot, empate 2-2 + sin ronda posterior → 0pts",
   [pred(85, "Brasil", "Países Bajos", 2, 2)], 0)
 
+t("Japón en slot (PIERDE), empate predicho + Brasil aparece pero empata (no gana) → 0pts  [caso David Cabeza]",
+  [pred(85, "Marruecos", "Japón", 1, 1),
+   pred(80, "Brasil", "Países Bajos", 2, 2)], 0)
+
+t("Japón en slot (PIERDE), empate predicho + Brasil GANA en otro cruce → 5pts",
+  [pred(85, "Marruecos", "Japón", 1, 1),
+   pred(80, "Países Bajos", "Brasil", 1, 2)], 5)
+
 print("\n═══ SLOT DIRECTO: 0 EQUIPOS (FALLBACK) ═══")
 
 t("Level 2 — ambos equipos en otro slot, exacto → 10pts",
