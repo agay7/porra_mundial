@@ -647,7 +647,7 @@ def partidos_por_dia(maestro, penaltis=None):
                                 gl3 = int(lp3["GOLES LOCAL"]); gv3 = int(lp3["GOLES VISITANTE"])
                                 if (ll3 == winner_r_j and gl3 > gv3) or (lv3 == winner_r_j and gv3 > gl3):
                                     pts_j = 5; break
-                                if winner_r_j in {ll3, lv3} and gl3 == gv3 and int(lid2) > int(pid):
+                                if winner_r_j in {ll3, lv3} and gl3 == gv3:
                                     for lid3 in (i for i in df_jug.index if pd.notna(i) and int(i) > int(lid2) and 73 <= int(i) <= 104):
                                         lp4 = df_jug.loc[lid3]
                                         if "LOCAL" not in lp4.index or "VISITANTE" not in lp4.index:
