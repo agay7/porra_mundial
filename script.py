@@ -303,7 +303,7 @@ def puntuar(maestro, jugador, penaltis=None):
                         ]
                         if encontrado.empty:
                             draw_slots = jugador_ko[
-                                (jugador_ko["ID"] > real_id) &
+                                (jugador_ko["ID"] != real_id) &
                                 (jugador_ko["GOLES LOCAL"] == jugador_ko["GOLES VISITANTE"]) &
                                 ((jugador_ko["LOCAL"] == winner_real) | (jugador_ko["VISITANTE"] == winner_real))
                             ]
