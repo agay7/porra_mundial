@@ -43,6 +43,15 @@ def misma_ronda(id_a, id_b):
     return False
 
 
+def ronda_index(id_):
+    """Índice de ronda (0=16avos, 1=8avos, 2=cuartos, 3=semis, 4=3º/final) o -1 si no aplica."""
+    id_ = int(id_)
+    for i, (lo, hi) in enumerate(RONDAS_ELIMINATORIA):
+        if lo <= id_ <= hi:
+            return i
+    return -1
+
+
 def puntuar_extras(maestro, jugador):
     """
     Puntúa los bonus:
@@ -581,8 +590,9 @@ def partidos_por_dia(maestro, penaltis=None):
                                     break
                     # Bracket individual (excluye slot directo, igual que puntuar())
                     # Si el equipo aparece en varios slots, se prefiere el slot donde GANA
+                    # Solo rondas >= la del partido real: una ronda anterior no aporta información sobre este cruce
                     eq_bracket_j = {}
-                    for lid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104), key=int):
+                    for lid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104 and ronda_index(i) >= ronda_index(pid)), key=int):
                         lp2 = df_jug.loc[lid]
                         if "LOCAL" not in lp2.index or "VISITANTE" not in lp2.index:
                             continue
@@ -720,9 +730,10 @@ def partidos_por_dia(maestro, penaltis=None):
                                         tiene_alguno = True
                                         break
 
-                        # Buscar cada equipo real individualmente en todo el bracket (guardando el resultado de ese slot)
+                        # Buscar cada equipo real individualmente en el bracket, solo rondas >= la del partido real
+                        # (guardando el resultado de ese slot)
                         equipos_en_bracket = {}
-                        for lid in sorted((i for i in df_jug.index if pd.notna(i) and 73 <= int(i) <= 104), key=int):
+                        for lid in sorted((i for i in df_jug.index if pd.notna(i) and 73 <= int(i) <= 104 and ronda_index(i) >= ronda_index(pid)), key=int):
                             lpred2 = df_jug.loc[lid]
                             if "LOCAL" not in lpred2.index or "VISITANTE" not in lpred2.index:
                                 continue
