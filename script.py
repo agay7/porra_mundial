@@ -30,6 +30,18 @@ ID_POSICIONES    = range(1000, 1048)  # IDs 1000-1047 → posiciones de grupo (3
 ID_BOTA_ORO      = 988            # Pichichi  → 10 pts
 ID_BALON_ORO     = 999            # Balón de Oro → 10 pts
 
+# Bloques de IDs por ronda dentro de la eliminatoria (16os, 8os, cuartos, semis, 3º/final)
+RONDAS_ELIMINATORIA = [(73, 88), (89, 96), (97, 100), (101, 102), (103, 104)]
+
+
+def misma_ronda(id_a, id_b):
+    """True si ambos IDs de eliminatoria caen en el mismo bloque de ronda."""
+    id_a, id_b = int(id_a), int(id_b)
+    for lo, hi in RONDAS_ELIMINATORIA:
+        if lo <= id_a <= hi:
+            return lo <= id_b <= hi
+    return False
+
 
 def puntuar_extras(maestro, jugador):
     """
@@ -243,6 +255,8 @@ def puntuar(maestro, jugador, penaltis=None):
                 # ¿Están los DOS equipos reales juntos en otro cruce predicho?
                 partido_l2 = None
                 for _, pred_row in jugador_ko[jugador_ko["ID"] != real_id].iterrows():
+                    if not misma_ronda(pred_row["ID"], real_id):
+                        continue
                     p_loc = str(pred_row["LOCAL"]).strip()
                     p_vis = str(pred_row["VISITANTE"]).strip()
                     if real_local in {p_loc, p_vis} and real_visit in {p_loc, p_vis}:
@@ -550,7 +564,7 @@ def partidos_por_dia(maestro, penaltis=None):
                     tiene_alguno_j = len(com_slot) >= 1
                     # Level 2 solo cuando hay CERO equipos en el slot directo (igual que puntuar())
                     if not tiene_alguno_j:
-                        for lid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104), key=int):
+                        for lid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104 and misma_ronda(i, pid)), key=int):
                             lp = df_jug.loc[lid]
                             if "LOCAL" not in lp.index or "VISITANTE" not in lp.index:
                                 continue
@@ -689,9 +703,9 @@ def partidos_por_dia(maestro, penaltis=None):
                         tiene_ambos = len(comunes_slot) == 2
                         tiene_alguno = len(comunes_slot) >= 1
 
-                        # Level 2: buscar ambos equipos reales juntos en otro slot de eliminatoria
+                        # Level 2: buscar ambos equipos reales juntos en otro slot de eliminatoria (misma ronda)
                         if not tiene_ambos:
-                            for lid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104), key=int):
+                            for lid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104 and misma_ronda(i, pid)), key=int):
                                 lpred = df_jug.loc[lid]
                                 if "LOCAL" not in lpred.index or "VISITANTE" not in lpred.index:
                                     continue
