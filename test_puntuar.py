@@ -220,6 +220,50 @@ tp("Level 2 — empate en otro slot pero Paraguay NO avanza después → 0pts",
    [pred(75, "Suiza", "Chile", 2, 0),
     pred(82, "Alemania", "Paraguay", 1, 1)], 0)
 
+print("\n═══ FIX EGIPTO: EMPATE EN ID ANTERIOR AL REAL, MISMA RONDA (bug de 'ID > real_id') ═══")
+
+def t2(name, real_rows, pred_rows, expected, penaltis=None):
+    global passed, failed
+    ok = run(name, real_rows, pred_rows, expected, penaltis)
+    if ok: passed += 1
+    else:  failed += 1
+
+# Real: Australia 1-1 Egipto (ID 86), Egipto gana en penaltis.
+RE = [real(86, "Australia", "Egipto", 1, 1)]
+PEN_E = {"86": "Egipto"}
+
+t2("0 equipos en slot 86; Egipto empata en ID 85 (ANTERIOR); Egipto reaparece en ID 96 → 5pts  [caso Ruth Galvin]",
+   RE,
+   [pred(86, "Estados Unidos", "Irán", 2, 2),
+    pred(85, "Suiza", "Egipto", 1, 1),
+    pred(96, "Egipto", "Portugal", 0, 3)],
+   5, PEN_E)
+
+t2("0 equipos en slot 86; Egipto empata en ID 85 (ANTERIOR) pero NUNCA reaparece → 0pts",
+   RE,
+   [pred(86, "Estados Unidos", "Irán", 2, 2),
+    pred(85, "Suiza", "Egipto", 1, 1)],
+   0, PEN_E)
+
+print("\n═══ FIX ALBERTO GAY: PAREJA EN OTRA RONDA NO CUENTA COMO LEVEL-2 COMPLETO ═══")
+
+# Real: Portugal 2-1 España en ID 93 (ronda 89-96). Portugal gana claro, sin penaltis.
+RP2 = [real(93, "Portugal", "España", 2, 1)]
+
+t2("0 equipos en slot 93; España-Portugal aparecen juntos en ID 100 (OTRA ronda, 97-100) "
+   "con marcador exacto invertido → solo 5pts (ganador vía fallback individual), NO 10pts de Level-2 completo",
+   RP2,
+   [pred(93, "Marruecos", "Francia", 1, 0),
+    pred(100, "España", "Portugal", 1, 2)],
+   5)
+
+t2("Control: misma pareja en ID 84 (MISMA ronda, 73-88 no aplica aquí; usamos 89-96) "
+   "→ si compartieran ronda con el 93, sí cuenta Level-2 completo (10pts)",
+   RP2,
+   [pred(93, "Marruecos", "Francia", 1, 0),
+    pred(90, "España", "Portugal", 1, 2)],
+   10)
+
 print(f"\n{'═'*50}")
 print(f"  Resultado: {passed} ✅  /  {failed} ❌  de {passed+failed} tests")
 print(f"{'═'*50}")
