@@ -690,6 +690,8 @@ def partidos_por_dia(maestro, penaltis=None):
                                             pts_j = 5; break
                                     if pts_j > 0:
                                         break
+                    if nombre == "Jesús García" and int(pid) == 89:
+                        print("DEBUG-FINAL pts_j=", pts_j)
                     # Display
                     marca_j  = "&#9989;" if pts_j > 0 else "&#10060;"
                     pts_txt  = f" <span style='color:#0f0'>+{pts_j}pts</span>" if pts_j > 0 else ""
