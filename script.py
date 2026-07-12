@@ -590,9 +590,10 @@ def partidos_por_dia(maestro, penaltis=None):
                                     break
                     # Bracket individual (excluye slot directo, igual que puntuar())
                     # Si el equipo aparece en varios slots, se prefiere el slot donde GANA
-                    # Solo rondas >= la del partido real: una ronda anterior no aporta información sobre este cruce
+                    # Sin restricción de ronda: se usa también como fallback de puntuación (igual que puntuar()),
+                    # que busca al ganador real en CUALQUIER cruce del jugador, no solo en rondas posteriores.
                     eq_bracket_j = {}
-                    for lid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104 and ronda_index(i) >= ronda_index(pid)), key=int):
+                    for lid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104), key=int):
                         lp2 = df_jug.loc[lid]
                         if "LOCAL" not in lp2.index or "VISITANTE" not in lp2.index:
                             continue
@@ -606,6 +607,9 @@ def partidos_por_dia(maestro, penaltis=None):
                                 gana = (eq == ll2 and gl2j > gv2j) or (eq == lv2 and gv2j > gl2j)
                                 if eq not in eq_bracket_j or gana:
                                     eq_bracket_j[eq] = (ll2, gl2j, gv2j, lv2, lid)
+                    # Versión solo para mostrar "también": excluye rondas anteriores a la del partido real
+                    # (no aporta información sobre este cruce), pero NO se usa para puntuar.
+                    eq_bracket_j_vis = {eq: v for eq, v in eq_bracket_j.items() if ronda_index(v[4]) >= ronda_index(pid)}
                     # Ganador real (90' o penaltis si hubo empate)
                     if gl_r > gv_r:
                         winner_r_j = real_local_eq
@@ -687,7 +691,7 @@ def partidos_por_dia(maestro, penaltis=None):
                     pts_txt  = f" <span style='color:#0f0'>+{pts_j}pts</span>" if pts_j > 0 else ""
                     estilo_j = " class='pred-exacto'" if pts_j == 10 else (" class='pred-diff'" if pts_j == 7 else "")
                     dj_eq_set = {e for e in [dj_loc, dj_vis] if e and e not in ("", "nan")}
-                    extras_j  = {eq: v for eq, v in eq_bracket_j.items() if eq not in dj_eq_set}
+                    extras_j  = {eq: v for eq, v in eq_bracket_j_vis.items() if eq not in dj_eq_set}
                     nota_j    = ""
                     if extras_j and not tiene_ambos_j:
                         partes_j = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if sub_imposible(eq, v, elim_reales, df_jug) else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(extras_j.items())]
@@ -696,8 +700,8 @@ def partidos_por_dia(maestro, penaltis=None):
                         dj_loc_disp = marcar_eliminado(dj_loc, winner_r_j, equipos_reales)
                         dj_vis_disp = marcar_eliminado(dj_vis, winner_r_j, equipos_reales)
                         html += f"<p{estilo_j}>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{dj_loc_disp} {dj_gl}-{dj_gv} {dj_vis_disp}{nota_j}</span>{pts_txt}</p>"
-                    elif eq_bracket_j:
-                        partes_b = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if sub_imposible(eq, v, elim_reales, df_jug) else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(eq_bracket_j.items())]
+                    elif eq_bracket_j_vis:
+                        partes_b = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if sub_imposible(eq, v, elim_reales, df_jug) else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(eq_bracket_j_vis.items())]
                         html += f"<p>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{' | '.join(partes_b)}</span>{pts_txt}</p>"
                     else:
                         html += f"<p>&#10060; <b>{nombre}:</b> &#10060;</p>"
