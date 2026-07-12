@@ -619,8 +619,6 @@ def partidos_por_dia(maestro, penaltis=None):
                         pen_winner_j = penaltis.get(str(int(partido["ID"])), "")
                         winner_r_j = pen_winner_j if pen_winner_j else None
                     # Calcular puntos (replicando exactamente puntuar())
-                    if nombre == "Jesús García" and int(pid) == 89:
-                        print("DEBUG", nombre, pid, "tiene_ambos_j=", tiene_ambos_j, "tiene_alguno_j=", tiene_alguno_j, "winner_r_j=", repr(winner_r_j), "gl_r=", gl_r, "gv_r=", gv_r)
                     pts_j = 0
                     if tiene_ambos_j:
                         pred_w = dj_loc if dj_gl > dj_gv else (dj_vis if dj_gv > dj_gl else None)
@@ -675,8 +673,6 @@ def partidos_por_dia(maestro, penaltis=None):
                                 ll3 = str(lp3["LOCAL"]).strip() if pd.notna(lp3["LOCAL"]) else ""
                                 lv3 = str(lp3["VISITANTE"]).strip() if pd.notna(lp3["VISITANTE"]) else ""
                                 gl3 = int(lp3["GOLES LOCAL"]); gv3 = int(lp3["GOLES VISITANTE"])
-                                if nombre == "Jesús García" and int(pid) == 89 and lid2 == 79:
-                                    print("DEBUG89-79", repr(ll3), repr(lv3), gl3, gv3, "match=", (ll3 == winner_r_j and gl3 > gv3) or (lv3 == winner_r_j and gv3 > gl3))
                                 if (ll3 == winner_r_j and gl3 > gv3) or (lv3 == winner_r_j and gv3 > gl3):
                                     pts_j = 5; break
                                 if winner_r_j in {ll3, lv3} and gl3 == gv3:
@@ -690,8 +686,6 @@ def partidos_por_dia(maestro, penaltis=None):
                                             pts_j = 5; break
                                     if pts_j > 0:
                                         break
-                    if nombre == "Jesús García" and int(pid) == 89:
-                        print("DEBUG-FINAL pts_j=", pts_j)
                     # Display
                     marca_j  = "&#9989;" if pts_j > 0 else "&#10060;"
                     pts_txt  = f" <span style='color:#0f0'>+{pts_j}pts</span>" if pts_j > 0 else ""
