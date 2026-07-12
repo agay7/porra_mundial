@@ -619,6 +619,8 @@ def partidos_por_dia(maestro, penaltis=None):
                         pen_winner_j = penaltis.get(str(int(partido["ID"])), "")
                         winner_r_j = pen_winner_j if pen_winner_j else None
                     # Calcular puntos (replicando exactamente puntuar())
+                    if nombre == "Jesús García" and int(pid) == 89:
+                        print("DEBUG", nombre, pid, "tiene_ambos_j=", tiene_ambos_j, "tiene_alguno_j=", tiene_alguno_j, "winner_r_j=", repr(winner_r_j), "gl_r=", gl_r, "gv_r=", gv_r)
                     pts_j = 0
                     if tiene_ambos_j:
                         pred_w = dj_loc if dj_gl > dj_gv else (dj_vis if dj_gv > dj_gl else None)
