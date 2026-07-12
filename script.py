@@ -52,6 +52,46 @@ def ronda_index(id_):
     return -1
 
 
+# IDs de eliminatoria donde el fallback de puntuación usa la regla de "misma ronda"
+# (el equipo debe ganar, o empatar y reaparecer después, DENTRO de su propia ronda —
+# no basta con ganar en una ronda distinta). De momento solo validado para el ID 96
+# (Suiza-Colombia); no se aplica al resto del cuadro hasta revisarlo caso a caso.
+IDS_FALLBACK_MISMA_RONDA = {96}
+
+
+def equipo_avanza_misma_ronda(jugador_ko, real_id, equipo):
+    """True si 'equipo' gana en algún cruce de SU MISMA ronda (según el bracket del jugador,
+    aunque sea contra un rival distinto al real), o empata ahí y luego reaparece en una ronda
+    posterior. Ganar o aparecer en una ronda distinta a la del partido real no cuenta."""
+    lo_hi = None
+    for lo, hi in RONDAS_ELIMINATORIA:
+        if lo <= real_id <= hi:
+            lo_hi = (lo, hi)
+            break
+    if lo_hi is None:
+        return False
+    lo, hi = lo_hi
+    en_ronda = jugador_ko[(jugador_ko["ID"] >= lo) & (jugador_ko["ID"] <= hi)]
+
+    for _, row in en_ronda.iterrows():
+        l, v = row["LOCAL"], row["VISITANTE"]
+        gl, gv = row["GOLES LOCAL"], row["GOLES VISITANTE"]
+        if (l == equipo and gl > gv) or (v == equipo and gv > gl):
+            return True
+
+    for _, row in en_ronda.iterrows():
+        l, v = row["LOCAL"], row["VISITANTE"]
+        gl, gv = row["GOLES LOCAL"], row["GOLES VISITANTE"]
+        if (l == equipo or v == equipo) and gl == gv:
+            despues = jugador_ko[
+                (jugador_ko["ID"] > row["ID"]) &
+                ((jugador_ko["LOCAL"] == equipo) | (jugador_ko["VISITANTE"] == equipo))
+            ]
+            if not despues.empty:
+                return True
+    return False
+
+
 def puntuar_extras(maestro, jugador):
     """
     Puntúa los bonus:
@@ -246,6 +286,12 @@ def puntuar(maestro, jugador, penaltis=None):
                                 (jugador_ko["VISITANTE"] == winner_real)
                             )
                         ]
+                        if not encontrado_l1.empty:
+                            total += 5; g += 1
+                    elif real_id in IDS_FALLBACK_MISMA_RONDA:
+                        # Ganador equivocado: debe ganar (o empatar y reaparecer) en SU MISMA RONDA
+                        if equipo_avanza_misma_ronda(jugador_ko, real_id, winner_real):
+                            total += 5; g += 1
                     else:
                         # Ganador equivocado O empate predicho con equipo correcto = perdedor: debe GANAR en otro cruce
                         encontrado_l1 = jugador_ko[
@@ -255,8 +301,8 @@ def puntuar(maestro, jugador, penaltis=None):
                                 ((jugador_ko["VISITANTE"] == winner_real) & (jugador_ko["GOLES VISITANTE"] > jugador_ko["GOLES LOCAL"]))
                             )
                         ]
-                    if not encontrado_l1.empty:
-                        total += 5; g += 1
+                        if not encontrado_l1.empty:
+                            total += 5; g += 1
 
             # ── CERO equipos correctos en el mismo ID ────────────────────────
             else:
@@ -313,6 +359,11 @@ def puntuar(maestro, jugador, penaltis=None):
                             else:
                                 total += 5; g += 1
                     # ganador incorrecto → 0 pts
+
+                elif real_id in IDS_FALLBACK_MISMA_RONDA:
+                    # Ganador real debe ganar (o empatar y reaparecer) en SU MISMA RONDA
+                    if winner_real is not None and equipo_avanza_misma_ronda(jugador_ko, real_id, winner_real):
+                        total += 5; g += 1
 
                 else:
                     # Ganador real GANA en otro cruce, O empata en ronda posterior y luego aparece en ronda aún posterior
@@ -660,10 +711,16 @@ def partidos_por_dia(maestro, penaltis=None):
                                 nv2 = str(np2["VISITANTE"]).strip() if pd.notna(np2["VISITANTE"]) else ""
                                 if winner_r_j in {nl2, nv2}:
                                     pts_j = 5; break
+                        elif int(pid) in IDS_FALLBACK_MISMA_RONDA:
+                            if winner_r_j and equipo_avanza_misma_ronda(df_jug.reset_index(), int(pid), winner_r_j):
+                                pts_j = 5
                         elif winner_r_j and winner_r_j in eq_bracket_j:
                             v = eq_bracket_j[winner_r_j]
                             if (winner_r_j == v[0] and v[1] > v[2]) or (winner_r_j == v[3] and v[2] > v[1]):
                                 pts_j = 5
+                    elif int(pid) in IDS_FALLBACK_MISMA_RONDA:
+                        if winner_r_j and equipo_avanza_misma_ronda(df_jug.reset_index(), int(pid), winner_r_j):
+                            pts_j = 5
                     else:
                         if winner_r_j:
                             for lid2 in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104), key=int):
