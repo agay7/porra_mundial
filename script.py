@@ -675,6 +675,8 @@ def partidos_por_dia(maestro, penaltis=None):
                                 ll3 = str(lp3["LOCAL"]).strip() if pd.notna(lp3["LOCAL"]) else ""
                                 lv3 = str(lp3["VISITANTE"]).strip() if pd.notna(lp3["VISITANTE"]) else ""
                                 gl3 = int(lp3["GOLES LOCAL"]); gv3 = int(lp3["GOLES VISITANTE"])
+                                if nombre == "Jesús García" and int(pid) == 89 and lid2 == 79:
+                                    print("DEBUG89-79", repr(ll3), repr(lv3), gl3, gv3, "match=", (ll3 == winner_r_j and gl3 > gv3) or (lv3 == winner_r_j and gv3 > gl3))
                                 if (ll3 == winner_r_j and gl3 > gv3) or (lv3 == winner_r_j and gv3 > gl3):
                                     pts_j = 5; break
                                 if winner_r_j in {ll3, lv3} and gl3 == gv3:
