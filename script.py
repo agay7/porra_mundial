@@ -747,16 +747,20 @@ def partidos_por_dia(maestro, penaltis=None):
                                 if eq in {ll2, lv2} and eq not in equipos_en_bracket:
                                     equipos_en_bracket[eq] = (ll2, gl2, gv2, lv2, lid)
 
-                        # En caso de empate (con al menos un equipo real), buscar quién clasifica en rondas siguientes
+                        # En caso de empate (con al menos un equipo real), buscar cuál de los DOS equipos
+                        # del propio empate del jugador (no de los equipos reales) reaparece en una ronda
+                        # posterior. El ID 103 es el partido por el 3er puesto (para quien PIERDE semis),
+                        # así que aparecer ahí no cuenta como avance: se excluye.
                         clasificado = ""
+                        equipos_empate = {e for e in (disp_local, disp_visit) if e and e not in ("", "nan")}
                         if tiene_alguno and disp_gl == disp_gv:
-                            for nid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104), key=int):
+                            for nid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104 and int(i) != 103), key=int):
                                 npred = df_jug.loc[nid]
                                 if "LOCAL" not in npred.index or "VISITANTE" not in npred.index:
                                     continue
                                 nl = str(npred["LOCAL"]).strip() if pd.notna(npred["LOCAL"]) else ""
                                 nv = str(npred["VISITANTE"]).strip() if pd.notna(npred["VISITANTE"]) else ""
-                                for eq in equipos_reales:
+                                for eq in equipos_empate:
                                     if eq in {nl, nv}:
                                         clasificado = f" (→ {eq})"
                                         break
