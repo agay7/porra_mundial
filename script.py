@@ -700,8 +700,12 @@ def partidos_por_dia(maestro, penaltis=None):
                         dj_loc_disp = marcar_eliminado(dj_loc, winner_r_j, equipos_reales)
                         dj_vis_disp = marcar_eliminado(dj_vis, winner_r_j, equipos_reales)
                         html += f"<p{estilo_j}>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{dj_loc_disp} {dj_gl}-{dj_gv} {dj_vis_disp}{nota_j}</span>{pts_txt}</p>"
-                    elif eq_bracket_j_vis:
-                        partes_b = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if sub_imposible(eq, v, elim_reales, df_jug) else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(eq_bracket_j_vis.items())]
+                    elif eq_bracket_j:
+                        # Preferimos la evidencia de la misma ronda o posterior; si no hay ninguna pero SÍ hay
+                        # puntos (p.ej. el equipo ganó en una ronda anterior), mostramos esa como respaldo para
+                        # no dejar puntos sin justificar en pantalla.
+                        fuente = eq_bracket_j_vis if eq_bracket_j_vis else eq_bracket_j
+                        partes_b = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if sub_imposible(eq, v, elim_reales, df_jug) else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(fuente.items())]
                         html += f"<p>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{' | '.join(partes_b)}</span>{pts_txt}</p>"
                     else:
                         html += f"<p>&#10060; <b>{nombre}:</b> &#10060;</p>"
