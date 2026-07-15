@@ -52,6 +52,21 @@ def ronda_index(id_):
     return -1
 
 
+def equipo_eliminado_antes(jugador_ko, real_id, equipo):
+    """True si 'equipo' aparece PERDIENDO en algún cruce del jugador con ID < real_id:
+    ya estaría eliminado en su propio cuadro antes de llegar a este partido, así que no
+    puede dársele crédito por "ganar en otro cruce" usando una victoria de antes de esa
+    eliminación (p.ej. Argentina gana en octavos pero pierde en cuartos: no puede ganar
+    la semifinal en el cuadro de ese jugador)."""
+    anteriores = jugador_ko[jugador_ko["ID"] < real_id]
+    for _, row in anteriores.iterrows():
+        l, v = row["LOCAL"], row["VISITANTE"]
+        gl, gv = row["GOLES LOCAL"], row["GOLES VISITANTE"]
+        if (l == equipo and gl < gv) or (v == equipo and gv < gl):
+            return True
+    return False
+
+
 def puntuar_extras(maestro, jugador):
     """
     Puntúa los bonus:
@@ -246,6 +261,9 @@ def puntuar(maestro, jugador, penaltis=None):
                                 (jugador_ko["VISITANTE"] == winner_real)
                             )
                         ]
+                    elif equipo_eliminado_antes(jugador_ko, real_id, winner_real):
+                        # Ya perdió antes en el propio cuadro del jugador: no vale que ganara aún antes
+                        encontrado_l1 = jugador_ko.iloc[0:0]
                     else:
                         # Ganador equivocado O empate predicho con equipo correcto = perdedor: debe GANAR en otro cruce
                         encontrado_l1 = jugador_ko[
@@ -316,7 +334,9 @@ def puntuar(maestro, jugador, penaltis=None):
 
                 else:
                     # Ganador real GANA en otro cruce, O empata en ronda posterior y luego aparece en ronda aún posterior
-                    if winner_real is not None:
+                    if winner_real is not None and equipo_eliminado_antes(jugador_ko, real_id, winner_real):
+                        pass  # ya perdió antes en el propio cuadro del jugador: no puede haber ganado este cruce
+                    elif winner_real is not None:
                         encontrado = jugador_ko[
                             (jugador_ko["ID"] != real_id) &
                             (
@@ -656,12 +676,12 @@ def partidos_por_dia(maestro, penaltis=None):
                                 nv2 = str(np2["VISITANTE"]).strip() if pd.notna(np2["VISITANTE"]) else ""
                                 if winner_r_j in {nl2, nv2}:
                                     pts_j = 5; break
-                        elif winner_r_j and winner_r_j in eq_bracket_j:
+                        elif winner_r_j and winner_r_j in eq_bracket_j and not equipo_eliminado_antes(df_jug.reset_index(), int(pid), winner_r_j):
                             v = eq_bracket_j[winner_r_j]
                             if (winner_r_j == v[0] and v[1] > v[2]) or (winner_r_j == v[3] and v[2] > v[1]):
                                 pts_j = 5
                     else:
-                        if winner_r_j:
+                        if winner_r_j and not equipo_eliminado_antes(df_jug.reset_index(), int(pid), winner_r_j):
                             for lid2 in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104), key=int):
                                 lp3 = df_jug.loc[lid2]
                                 if "LOCAL" not in lp3.index or "VISITANTE" not in lp3.index:

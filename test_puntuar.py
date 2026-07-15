@@ -264,6 +264,30 @@ t2("Control: misma pareja en ID 84 (MISMA ronda, 73-88 no aplica aquí; usamos 8
     pred(90, "España", "Portugal", 1, 2)],
    10)
 
+print("\n═══ FIX ELIMINACIÓN: NO VALE GANAR EN OTRO CRUCE SI YA PERDIÓ ANTES EN SU PROPIO CUADRO ═══")
+
+# Real: Inglaterra 1-2 Argentina en ID 102 (semifinal). Argentina gana.
+RA = [real(102, "Inglaterra", "Argentina", 1, 2)]
+
+t2("Argentina gana en ID87 (16avos) pero PIERDE en ID100 (cuartos, antes de la semifinal 102) "
+   "→ 0pts, ya estaba eliminada en el cuadro del jugador  [caso Carlos Moreno / Mario Redondo]",
+   RA,
+   [pred(102, "Inglaterra", "Portugal", 1, 2),
+    pred(87, "Argentina", "Uruguay", 2, 1),
+    pred(100, "Argentina", "Portugal", 1, 2)],
+   0)
+
+t2("Control: Argentina gana en ID87 y NUNCA pierde antes de la semifinal 102 → sigue valiendo 5pts",
+   RA,
+   [pred(102, "Inglaterra", "Portugal", 1, 2),
+    pred(87, "Argentina", "Uruguay", 2, 1)],
+   5)
+
+t2("Control: Argentina directamente en el slot 102 y predicha ganadora → 5pts, sin depender de la eliminación",
+   RA,
+   [pred(102, "Brasil", "Argentina", 0, 2)],
+   5)
+
 print(f"\n{'═'*50}")
 print(f"  Resultado: {passed} ✅  /  {failed} ❌  de {passed+failed} tests")
 print(f"{'═'*50}")
