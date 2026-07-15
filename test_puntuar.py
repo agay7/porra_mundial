@@ -134,10 +134,12 @@ t("Brasil PIERDE en otro cruce → 0pts  [caso Jesús García / Jorge Gamero]",
   [pred(85, "Suiza", "Chile", 3, 0),
    pred(92, "Paraguay", "Brasil", 2, 1)], 0)
 
-t("Brasil EMPATA en ronda posterior + Brasil aparece en ronda aún posterior → 5pts  [caso Javier García]",
+t("Brasil EMPATA en una ronda DISTINTA (89-96, no la de ID85=73-88) y reaparece después "
+  "→ 0pts con la regla de misma ronda: el empate no está anclado a la ronda del partido real "
+  "[antes de la regla de misma ronda esto daba 5pts]",
   [pred(85, "Suiza", "Chile", 3, 0),
    pred(92, "Brasil", "Irán", 2, 2),
-   pred(97, "Brasil", "Francia", 1, 0)], 5)
+   pred(97, "Brasil", "Francia", 1, 0)], 0)
 
 t("Brasil EMPATA en ronda posterior + Turquía avanza (no Brasil) → 0pts  [caso Raúl Turquía]",
   [pred(85, "Suiza", "Chile", 3, 0),
@@ -251,11 +253,13 @@ print("\n═══ FIX ALBERTO GAY: PAREJA EN OTRA RONDA NO CUENTA COMO LEVEL-2 
 RP2 = [real(93, "Portugal", "España", 2, 1)]
 
 t2("0 equipos en slot 93; España-Portugal aparecen juntos en ID 100 (OTRA ronda, 97-100) "
-   "con marcador exacto invertido → solo 5pts (ganador vía fallback individual), NO 10pts de Level-2 completo",
+   "→ 0pts: ni cuenta como Level-2 (ronda distinta) ni como fallback individual "
+   "(Portugal no gana/empata dentro de la ronda 89-96 del partido real) "
+   "[antes de la regla de misma ronda esto daba 5pts]",
    RP2,
    [pred(93, "Marruecos", "Francia", 1, 0),
     pred(100, "España", "Portugal", 1, 2)],
-   5)
+   0)
 
 t2("Control: misma pareja en ID 84 (MISMA ronda, 73-88 no aplica aquí; usamos 89-96) "
    "→ si compartieran ronda con el 93, sí cuenta Level-2 completo (10pts)",
@@ -264,9 +268,9 @@ t2("Control: misma pareja en ID 84 (MISMA ronda, 73-88 no aplica aquí; usamos 8
     pred(90, "España", "Portugal", 1, 2)],
    10)
 
-print("\n═══ FIX ELIMINACIÓN: NO VALE GANAR EN OTRO CRUCE SI YA PERDIÓ ANTES EN SU PROPIO CUADRO ═══")
+print("\n═══ FIX MISMA RONDA (fallback individual): el equipo debe ganar (o empatar y reaparecer) EN SU PROPIA RONDA ═══")
 
-# Real: Inglaterra 1-2 Argentina en ID 102 (semifinal). Argentina gana.
+# Real: Inglaterra 1-2 Argentina en ID 102 (semifinal, ronda 101-102). Argentina gana.
 RA = [real(102, "Inglaterra", "Argentina", 1, 2)]
 
 t2("Argentina gana en ID87 (16avos) pero PIERDE en ID100 (cuartos, antes de la semifinal 102) "
@@ -277,11 +281,31 @@ t2("Argentina gana en ID87 (16avos) pero PIERDE en ID100 (cuartos, antes de la s
     pred(100, "Argentina", "Portugal", 1, 2)],
    0)
 
-t2("Control: Argentina gana en ID87 y NUNCA pierde antes de la semifinal 102 → sigue valiendo 5pts",
+t2("Argentina gana en ID87 pero NUNCA aparece en la ronda de semifinales (101-102) del jugador "
+   "→ 0pts, no basta con no estar eliminada, tiene que llegar a esa ronda  [caso Óscar Espinosa]",
+   RA,
+   [pred(102, "Inglaterra", "Colombia", 1, 0),
+    pred(87, "Argentina", "Uruguay", 2, 1)],
+   0)
+
+t2("Control: Argentina gana DENTRO de la ronda de semifinales (101-102), en el ID101 (otro cruce de esa misma ronda) → 5pts",
    RA,
    [pred(102, "Inglaterra", "Portugal", 1, 2),
-    pred(87, "Argentina", "Uruguay", 2, 1)],
+    pred(101, "Argentina", "España", 2, 1)],
    5)
+
+t2("Control: Argentina EMPATA en la ronda de semifinales (ID101) y luego reaparece en una ronda posterior → 5pts",
+   RA,
+   [pred(102, "Inglaterra", "Portugal", 1, 2),
+    pred(101, "Argentina", "España", 1, 1),
+    pred(103, "Argentina", "Francia", 2, 0)],
+   5)
+
+t2("Control: Argentina EMPATA en semifinales (ID101) pero nunca reaparece después → 0pts",
+   RA,
+   [pred(102, "Inglaterra", "Portugal", 1, 2),
+    pred(101, "Argentina", "España", 1, 1)],
+   0)
 
 t2("Control: Argentina directamente en el slot 102 y predicha ganadora → 5pts, sin depender de la eliminación",
    RA,

@@ -30,8 +30,10 @@ ID_POSICIONES    = range(1000, 1048)  # IDs 1000-1047 → posiciones de grupo (3
 ID_BOTA_ORO      = 988            # Pichichi  → 10 pts
 ID_BALON_ORO     = 999            # Balón de Oro → 10 pts
 
-# Bloques de IDs por ronda dentro de la eliminatoria (16os, 8os, cuartos, semis, 3º/final)
-RONDAS_ELIMINATORIA = [(73, 88), (89, 96), (97, 100), (101, 102), (103, 104)]
+# Bloques de IDs por ronda dentro de la eliminatoria (16os, 8os, cuartos, semis).
+# El 3º puesto (103) y la final (104) van SEPARADOS: aunque se juegan el mismo día,
+# uno es para los perdedores de semis y el otro para los ganadores, no son "la misma ronda".
+RONDAS_ELIMINATORIA = [(73, 88), (89, 96), (97, 100), (101, 102), (103, 103), (104, 104)]
 
 
 def misma_ronda(id_a, id_b):
@@ -44,7 +46,7 @@ def misma_ronda(id_a, id_b):
 
 
 def ronda_index(id_):
-    """Índice de ronda (0=16avos, 1=8avos, 2=cuartos, 3=semis, 4=3º/final) o -1 si no aplica."""
+    """Índice de ronda (0=16avos, 1=8avos, 2=cuartos, 3=semis, 4=3º puesto, 5=final) o -1 si no aplica."""
     id_ = int(id_)
     for i, (lo, hi) in enumerate(RONDAS_ELIMINATORIA):
         if lo <= id_ <= hi:
@@ -52,18 +54,51 @@ def ronda_index(id_):
     return -1
 
 
-def equipo_eliminado_antes(jugador_ko, real_id, equipo):
-    """True si 'equipo' aparece PERDIENDO en algún cruce del jugador con ID < real_id:
-    ya estaría eliminado en su propio cuadro antes de llegar a este partido, así que no
-    puede dársele crédito por "ganar en otro cruce" usando una victoria de antes de esa
-    eliminación (p.ej. Argentina gana en octavos pero pierde en cuartos: no puede ganar
-    la semifinal en el cuadro de ese jugador)."""
-    anteriores = jugador_ko[(jugador_ko["ID"] < real_id) & (jugador_ko["ID"] >= 73) & (jugador_ko["ID"] <= 104)]
-    for _, row in anteriores.iterrows():
+def ronda_relevante(id_otro, id_real):
+    """True si 'id_otro' es de la misma ronda que 'id_real', o de una ronda estrictamente
+    posterior en la progresión normal del torneo. El 3er puesto (103) y la final (104) son
+    dos destinos alternativos de la semifinal (no uno consecuencia del otro), así que no
+    cuentan como "ronda posterior" el uno respecto al otro."""
+    if {int(id_otro), int(id_real)} == {103, 104}:
+        return False
+    return ronda_index(id_otro) >= ronda_index(id_real)
+
+
+def equipo_avanza_misma_ronda(jugador_ko, real_id, equipo):
+    """True si 'equipo' gana en algún cruce de SU MISMA ronda (según el bracket del jugador,
+    aunque sea contra un rival distinto al real), o empata ahí y luego reaparece en una ronda
+    posterior. No basta con haber ganado en una ronda anterior si en la ronda del partido que
+    se puntúa el jugador no lo tiene ganando (o ni siquiera presente): p.ej. Argentina gana en
+    octavos pero en cuartos pierde (o ni aparece) → no puede ganar la semifinal en ese cuadro."""
+    lo_hi = None
+    for lo, hi in RONDAS_ELIMINATORIA:
+        if lo <= real_id <= hi:
+            lo_hi = (lo, hi)
+            break
+    if lo_hi is None:
+        return False
+    lo, hi = lo_hi
+    en_ronda = jugador_ko[(jugador_ko["ID"] >= lo) & (jugador_ko["ID"] <= hi)]
+
+    for _, row in en_ronda.iterrows():
         l, v = row["LOCAL"], row["VISITANTE"]
         gl, gv = row["GOLES LOCAL"], row["GOLES VISITANTE"]
-        if (l == equipo and gl < gv) or (v == equipo and gv < gl):
+        if (l == equipo and gl > gv) or (v == equipo and gv > gl):
             return True
+
+    for _, row in en_ronda.iterrows():
+        l, v = row["LOCAL"], row["VISITANTE"]
+        gl, gv = row["GOLES LOCAL"], row["GOLES VISITANTE"]
+        if (l == equipo or v == equipo) and gl == gv:
+            candidatos = jugador_ko[
+                (jugador_ko["ID"] > row["ID"]) &
+                ((jugador_ko["LOCAL"] == equipo) | (jugador_ko["VISITANTE"] == equipo))
+            ]
+            # El 3er puesto (103) no "avanza" a la final (104): son destinos alternativos.
+            if int(row["ID"]) == 103:
+                candidatos = candidatos[candidatos["ID"] != 104]
+            if not candidatos.empty:
+                return True
     return False
 
 
@@ -115,6 +150,23 @@ def puntuar_extras(maestro, jugador):
             puntos_extra += 10
 
     return puntos_extra
+
+
+def leer_cuadro_honor(archivo):
+    """Lee la hoja 'WORLDCUP' de un Excel (maestro o de un participante) y devuelve
+    {"campeon": ..., "subcampeon": ..., "3puesto": ...} desde el 'Cuadro de honor'
+    (posiciones fijas de la plantilla). Es una predicción directa e inequívoca para el
+    3er puesto (ID 103) y la final (ID 104), a diferencia de intentar inferirla buscando
+    en qué ronda posterior "reaparece" un equipo (que no aplica: 103 y 104 son destinos
+    alternativos de la semifinal, no una progresión)."""
+    try:
+        df = pd.read_excel(archivo, sheet_name="WORLDCUP", header=None)
+        campeon = str(df.iat[149, 26]).strip() if pd.notna(df.iat[149, 26]) else ""
+        subcampeon = str(df.iat[150, 26]).strip() if pd.notna(df.iat[150, 26]) else ""
+        tercero = str(df.iat[151, 26]).strip() if pd.notna(df.iat[151, 26]) else ""
+        return {"campeon": campeon, "subcampeon": subcampeon, "3puesto": tercero}
+    except Exception:
+        return {"campeon": "", "subcampeon": "", "3puesto": ""}
 
 
 def cargar_penaltis():
@@ -261,20 +313,12 @@ def puntuar(maestro, jugador, penaltis=None):
                                 (jugador_ko["VISITANTE"] == winner_real)
                             )
                         ]
-                    elif equipo_eliminado_antes(jugador_ko, real_id, winner_real):
-                        # Ya perdió antes en el propio cuadro del jugador: no vale que ganara aún antes
-                        encontrado_l1 = jugador_ko.iloc[0:0]
+                        if not encontrado_l1.empty:
+                            total += 5; g += 1
                     else:
-                        # Ganador equivocado O empate predicho con equipo correcto = perdedor: debe GANAR en otro cruce
-                        encontrado_l1 = jugador_ko[
-                            (jugador_ko["ID"] != real_id) &
-                            (
-                                ((jugador_ko["LOCAL"]     == winner_real) & (jugador_ko["GOLES LOCAL"] > jugador_ko["GOLES VISITANTE"])) |
-                                ((jugador_ko["VISITANTE"] == winner_real) & (jugador_ko["GOLES VISITANTE"] > jugador_ko["GOLES LOCAL"]))
-                            )
-                        ]
-                    if not encontrado_l1.empty:
-                        total += 5; g += 1
+                        # Ganador equivocado: debe ganar (o empatar y reaparecer) en SU MISMA RONDA
+                        if equipo_avanza_misma_ronda(jugador_ko, real_id, winner_real):
+                            total += 5; g += 1
 
             # ── CERO equipos correctos en el mismo ID ────────────────────────
             else:
@@ -333,33 +377,9 @@ def puntuar(maestro, jugador, penaltis=None):
                     # ganador incorrecto → 0 pts
 
                 else:
-                    # Ganador real GANA en otro cruce, O empata en ronda posterior y luego aparece en ronda aún posterior
-                    if winner_real is not None and equipo_eliminado_antes(jugador_ko, real_id, winner_real):
-                        pass  # ya perdió antes en el propio cuadro del jugador: no puede haber ganado este cruce
-                    elif winner_real is not None:
-                        encontrado = jugador_ko[
-                            (jugador_ko["ID"] != real_id) &
-                            (
-                                ((jugador_ko["LOCAL"]     == winner_real) & (jugador_ko["GOLES LOCAL"] > jugador_ko["GOLES VISITANTE"])) |
-                                ((jugador_ko["VISITANTE"] == winner_real) & (jugador_ko["GOLES VISITANTE"] > jugador_ko["GOLES LOCAL"]))
-                            )
-                        ]
-                        if encontrado.empty:
-                            draw_slots = jugador_ko[
-                                (jugador_ko["ID"] != real_id) &
-                                (jugador_ko["GOLES LOCAL"] == jugador_ko["GOLES VISITANTE"]) &
-                                ((jugador_ko["LOCAL"] == winner_real) | (jugador_ko["VISITANTE"] == winner_real))
-                            ]
-                            for _, drow in draw_slots.iterrows():
-                                after = jugador_ko[
-                                    (jugador_ko["ID"] > drow["ID"]) &
-                                    ((jugador_ko["LOCAL"] == winner_real) | (jugador_ko["VISITANTE"] == winner_real))
-                                ]
-                                if not after.empty:
-                                    encontrado = after.head(1)
-                                    break
-                        if not encontrado.empty:
-                            total += 5; g += 1
+                    # Ganador real debe ganar (o empatar y reaparecer) en SU MISMA RONDA
+                    if winner_real is not None and equipo_avanza_misma_ronda(jugador_ko, real_id, winner_real):
+                        total += 5; g += 1
 
     return total, g, d, e
 
@@ -477,12 +497,14 @@ def partidos_por_dia(maestro, penaltis=None):
 
     # Cargar todos los participantes una sola vez
     participantes = {}
+    cuadros_honor = {}
     for archivo in sorted(RUTA_PARTICIPANTES.glob("*.xlsx")):
         if archivo.name.startswith("~$"):
             continue
         nombre = unicodedata.normalize("NFC", archivo.stem).replace("_", " ")
         df_jug = pd.read_excel(archivo, sheet_name="Datos")
         participantes[nombre] = df_jug.set_index("ID")
+        cuadros_honor[nombre] = leer_cuadro_honor(archivo)
 
     # Días con partidos, ordenados
     fechas = sorted(maestro["Fecha"].dropna().dt.date.unique())
@@ -629,7 +651,7 @@ def partidos_por_dia(maestro, penaltis=None):
                                     eq_bracket_j[eq] = (ll2, gl2j, gv2j, lv2, lid)
                     # Versión solo para mostrar "también": excluye rondas anteriores a la del partido real
                     # (no aporta información sobre este cruce), pero NO se usa para puntuar.
-                    eq_bracket_j_vis = {eq: v for eq, v in eq_bracket_j.items() if ronda_index(v[4]) >= ronda_index(pid)}
+                    eq_bracket_j_vis = {eq: v for eq, v in eq_bracket_j.items() if ronda_relevante(v[4], pid)}
                     # Ganador real (90' o penaltis si hubo empate)
                     if gl_r > gv_r:
                         winner_r_j = real_local_eq
@@ -680,37 +702,18 @@ def partidos_por_dia(maestro, penaltis=None):
                                 nv2 = str(np2["VISITANTE"]).strip() if pd.notna(np2["VISITANTE"]) else ""
                                 if winner_r_j in {nl2, nv2}:
                                     pts_j = 5; break
-                        elif winner_r_j and winner_r_j in eq_bracket_j and not equipo_eliminado_antes(df_jug.reset_index(), int(pid), winner_r_j):
-                            v = eq_bracket_j[winner_r_j]
-                            if (winner_r_j == v[0] and v[1] > v[2]) or (winner_r_j == v[3] and v[2] > v[1]):
-                                pts_j = 5
+                        elif winner_r_j and equipo_avanza_misma_ronda(df_jug.reset_index(), int(pid), winner_r_j):
+                            pts_j = 5
                     else:
-                        if winner_r_j and not equipo_eliminado_antes(df_jug.reset_index(), int(pid), winner_r_j):
-                            for lid2 in sorted((i for i in df_jug.index if pd.notna(i) and int(i) != int(pid) and 73 <= int(i) <= 104), key=int):
-                                lp3 = df_jug.loc[lid2]
-                                if "LOCAL" not in lp3.index or "VISITANTE" not in lp3.index:
-                                    continue
-                                ll3 = str(lp3["LOCAL"]).strip() if pd.notna(lp3["LOCAL"]) else ""
-                                lv3 = str(lp3["VISITANTE"]).strip() if pd.notna(lp3["VISITANTE"]) else ""
-                                gl3 = int(lp3["GOLES LOCAL"]); gv3 = int(lp3["GOLES VISITANTE"])
-                                if (ll3 == winner_r_j and gl3 > gv3) or (lv3 == winner_r_j and gv3 > gl3):
-                                    pts_j = 5; break
-                                if winner_r_j in {ll3, lv3} and gl3 == gv3:
-                                    for lid3 in (i for i in df_jug.index if pd.notna(i) and int(i) > int(lid2) and 73 <= int(i) <= 104):
-                                        lp4 = df_jug.loc[lid3]
-                                        if "LOCAL" not in lp4.index or "VISITANTE" not in lp4.index:
-                                            continue
-                                        nl4 = str(lp4["LOCAL"]).strip() if pd.notna(lp4["LOCAL"]) else ""
-                                        nv4 = str(lp4["VISITANTE"]).strip() if pd.notna(lp4["VISITANTE"]) else ""
-                                        if winner_r_j in {nl4, nv4}:
-                                            pts_j = 5; break
-                                    if pts_j > 0:
-                                        break
+                        if winner_r_j and equipo_avanza_misma_ronda(df_jug.reset_index(), int(pid), winner_r_j):
+                            pts_j = 5
                     # Display
                     marca_j  = "&#9989;" if pts_j > 0 else "&#10060;"
                     pts_txt  = f" <span style='color:#0f0'>+{pts_j}pts</span>" if pts_j > 0 else ""
                     estilo_j = " class='pred-exacto'" if pts_j == 10 else (" class='pred-diff'" if pts_j == 7 else "")
                     dj_eq_set = {e for e in [dj_loc, dj_vis] if e and e not in ("", "nan")}
+                    # Solo evidencia de la misma ronda o posterior: una ronda anterior ya no
+                    # justifica puntos (regla de misma ronda), así que no debe mostrarse aquí.
                     extras_j  = {eq: v for eq, v in eq_bracket_j_vis.items() if eq not in dj_eq_set}
                     nota_j    = ""
                     if extras_j and not tiene_ambos_j:
@@ -720,9 +723,8 @@ def partidos_por_dia(maestro, penaltis=None):
                         dj_loc_disp = marcar_eliminado(dj_loc, winner_r_j, equipos_reales)
                         dj_vis_disp = marcar_eliminado(dj_vis, winner_r_j, equipos_reales)
                         html += f"<p{estilo_j}>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{dj_loc_disp} {dj_gl}-{dj_gv} {dj_vis_disp}{nota_j}</span>{pts_txt}</p>"
-                    elif eq_bracket_j:
-                        fuente = eq_bracket_j_vis if eq_bracket_j_vis else eq_bracket_j
-                        partes_b = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if sub_imposible(eq, v, elim_reales, df_jug) else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(fuente.items())]
+                    elif eq_bracket_j_vis:
+                        partes_b = [f"{eq}: <s>{v[0]} {v[1]}-{v[2]} {v[3]}</s>" if sub_imposible(eq, v, elim_reales, df_jug) else f"{eq}: " + fmt_resultado(eq, *v, df_jug) for eq, v in sorted(eq_bracket_j_vis.items())]
                         html += f"<p>{marca_j} <b>{nombre}:</b> <span style='color:#aaa'>{' | '.join(partes_b)}</span>{pts_txt}</p>"
                     else:
                         html += f"<p>&#10060; <b>{nombre}:</b> &#10060;</p>"
@@ -758,7 +760,7 @@ def partidos_por_dia(maestro, penaltis=None):
                         # Buscar cada equipo real individualmente en el bracket, solo rondas >= la del partido real
                         # (guardando el resultado de ese slot)
                         equipos_en_bracket = {}
-                        for lid in sorted((i for i in df_jug.index if pd.notna(i) and 73 <= int(i) <= 104 and ronda_index(i) >= ronda_index(pid)), key=int):
+                        for lid in sorted((i for i in df_jug.index if pd.notna(i) and 73 <= int(i) <= 104 and ronda_relevante(i, pid)), key=int):
                             lpred2 = df_jug.loc[lid]
                             if "LOCAL" not in lpred2.index or "VISITANTE" not in lpred2.index:
                                 continue
@@ -772,16 +774,26 @@ def partidos_por_dia(maestro, penaltis=None):
                                 if eq in {ll2, lv2} and eq not in equipos_en_bracket:
                                     equipos_en_bracket[eq] = (ll2, gl2, gv2, lv2, lid)
 
-                        # En caso de empate (con al menos un equipo real), buscar quién clasifica en rondas siguientes
+                        # En caso de empate, buscar cuál de los DOS equipos del propio empate del
+                        # jugador (no de los equipos reales) reaparece en una ronda posterior.
+                        # El 3er puesto (103) y la final (104) usan el "Cuadro de honor" del Excel
+                        # (predicción directa de 3puesto/campeón), no aplica lo de "ronda posterior".
                         clasificado = ""
-                        if tiene_alguno and disp_gl == disp_gv:
+                        equipos_empate = {e for e in (disp_local, disp_visit) if e and e not in ("", "nan")}
+                        if tiene_alguno and disp_gl == disp_gv and int(pid) in (103, 104):
+                            honor = cuadros_honor.get(nombre, {})
+                            campo = "3puesto" if int(pid) == 103 else "campeon"
+                            elegido = honor.get(campo, "")
+                            if elegido in equipos_empate:
+                                clasificado = f" (→ {elegido})"
+                        elif tiene_alguno and disp_gl == disp_gv:
                             for nid in sorted((i for i in df_jug.index if pd.notna(i) and int(i) > int(pid) and 73 <= int(i) <= 104), key=int):
                                 npred = df_jug.loc[nid]
                                 if "LOCAL" not in npred.index or "VISITANTE" not in npred.index:
                                     continue
                                 nl = str(npred["LOCAL"]).strip() if pd.notna(npred["LOCAL"]) else ""
                                 nv = str(npred["VISITANTE"]).strip() if pd.notna(npred["VISITANTE"]) else ""
-                                for eq in equipos_reales:
+                                for eq in equipos_empate:
                                     if eq in {nl, nv}:
                                         clasificado = f" (→ {eq})"
                                         break
