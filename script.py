@@ -480,7 +480,7 @@ def partidos_por_dia(maestro, penaltis=None):
     for archivo in sorted(RUTA_PARTICIPANTES.glob("*.xlsx")):
         if archivo.name.startswith("~$"):
             continue
-        nombre = archivo.stem.replace("_", " ")
+        nombre = unicodedata.normalize("NFC", archivo.stem).replace("_", " ")
         df_jug = pd.read_excel(archivo, sheet_name="Datos")
         participantes[nombre] = df_jug.set_index("ID")
 
