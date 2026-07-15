@@ -58,7 +58,7 @@ def equipo_eliminado_antes(jugador_ko, real_id, equipo):
     puede dársele crédito por "ganar en otro cruce" usando una victoria de antes de esa
     eliminación (p.ej. Argentina gana en octavos pero pierde en cuartos: no puede ganar
     la semifinal en el cuadro de ese jugador)."""
-    anteriores = jugador_ko[jugador_ko["ID"] < real_id]
+    anteriores = jugador_ko[(jugador_ko["ID"] < real_id) & (jugador_ko["ID"] >= 73) & (jugador_ko["ID"] <= 104)]
     for _, row in anteriores.iterrows():
         l, v = row["LOCAL"], row["VISITANTE"]
         gl, gv = row["GOLES LOCAL"], row["GOLES VISITANTE"]
