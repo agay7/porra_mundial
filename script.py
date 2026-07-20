@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
+
 import pandas as pd
 from pathlib import Path
 import os
@@ -102,12 +105,35 @@ def equipo_avanza_misma_ronda(jugador_ko, real_id, equipo):
     return False
 
 
-def puntuar_extras(maestro, jugador):
+def normalizar_nombre(s):
+    """Minúsculas, sin acentos ni espacios sobrantes, para comparar nombres de jugador
+    (p.ej. "Mbappé" y "Mbappe" deben contar como el mismo)."""
+    s = unicodedata.normalize("NFKD", str(s)).encode("ascii", "ignore").decode("ascii")
+    return " ".join(s.strip().lower().split())
+
+
+def nombres_coinciden(pred, real):
+    """True si 'pred' y 'real' son el mismo jugador, sin importar acentos ni si uno
+    puso el nombre completo y el otro solo el apellido (p.ej. "Kylian Mbappe" y
+    "Mbappe" cuentan igual)."""
+    p, r = normalizar_nombre(pred), normalizar_nombre(real)
+    if not p or not r:
+        return False
+    if p == r:
+        return True
+    p_palabras, r_palabras = set(p.split()), set(r.split())
+    corto, largo = (p_palabras, r_palabras) if len(p_palabras) <= len(r_palabras) else (r_palabras, p_palabras)
+    return corto.issubset(largo)
+
+
+def puntuar_extras(maestro, jugador, honor_real=None, honor_jugador=None):
     """
     Puntúa los bonus:
       - Posición exacta de equipo en fase de grupos (IDs 1000-1047): 3 pts
-      - Bota de Oro / Pichichi (ID 988): 10 pts
-      - Balón de Oro (ID 999): 10 pts
+      - Bota de Oro / Pichichi: 10 pts
+      - Balón de Oro: 10 pts
+    'honor_real' y 'honor_jugador' son los dicts de leer_cuadro_honor() del maestro y
+    del participante respectivamente (Bota/Balón de Oro se predicen ahí, no en "Datos").
     Devuelve los puntos extra totales.
     """
     puntos_extra = 0
@@ -131,22 +157,15 @@ def puntuar_extras(maestro, jugador):
             puntos_extra += 3
 
     # ── Bota de Oro / Balón de Oro ───────────────────────
-    for id_premio, col_maestro in [(ID_BOTA_ORO, "Unnamed: 6"), (ID_BALON_ORO, "Unnamed: 6")]:
-
-        fila_real = maestro[maestro["ID"] == id_premio]
-        if fila_real.empty:
-            continue
-
-        resultado_real = str(fila_real.iloc[0].get(col_maestro, "")).strip()
-        if not resultado_real or resultado_real in ("nan", "0", "0.0", ""):
+    honor_real = honor_real or {}
+    honor_jugador = honor_jugador or {}
+    for campo in ("bota_oro", "balon_oro"):
+        resultado_real = honor_real.get(campo, "")
+        if not resultado_real or resultado_real.lower() in ("nan", "0", "0.0", ""):
             continue  # aún no resuelto
 
-        fila_jug = jugador[jugador["ID"] == id_premio]
-        if fila_jug.empty:
-            continue
-
-        pred = str(fila_jug.iloc[0].get("PREMIO", "")).strip()
-        if pred.lower() == resultado_real.lower():
+        pred = honor_jugador.get(campo, "")
+        if pred and nombres_coinciden(pred, resultado_real):
             puntos_extra += 10
 
     return puntos_extra
@@ -154,19 +173,27 @@ def puntuar_extras(maestro, jugador):
 
 def leer_cuadro_honor(archivo):
     """Lee la hoja 'WORLDCUP' de un Excel (maestro o de un participante) y devuelve
-    {"campeon": ..., "subcampeon": ..., "3puesto": ...} desde el 'Cuadro de honor'
-    (posiciones fijas de la plantilla). Es una predicción directa e inequívoca para el
-    3er puesto (ID 103) y la final (ID 104), a diferencia de intentar inferirla buscando
-    en qué ronda posterior "reaparece" un equipo (que no aplica: 103 y 104 son destinos
-    alternativos de la semifinal, no una progresión)."""
+    {"campeon", "subcampeon", "3puesto", "bota_oro", "balon_oro"} desde el 'Cuadro de
+    honor' (posiciones fijas de la plantilla). Es una predicción directa e inequívoca
+    para el 3er puesto (ID 103) y la final (ID 104), a diferencia de intentar inferirla
+    buscando en qué ronda posterior "reaparece" un equipo (no aplica: 103 y 104 son
+    destinos alternativos de la semifinal). También es la única fuente real de la
+    predicción de Bota de Oro / Balón de Oro: la columna "PREMIO" de la hoja "Datos"
+    solo contiene la etiqueta ("Bota de oro"), no el nombre del jugador predicho."""
+    def celda(df, fila):
+        v = df.iat[fila, 26]
+        return str(v).strip() if pd.notna(v) else ""
     try:
         df = pd.read_excel(archivo, sheet_name="WORLDCUP", header=None)
-        campeon = str(df.iat[149, 26]).strip() if pd.notna(df.iat[149, 26]) else ""
-        subcampeon = str(df.iat[150, 26]).strip() if pd.notna(df.iat[150, 26]) else ""
-        tercero = str(df.iat[151, 26]).strip() if pd.notna(df.iat[151, 26]) else ""
-        return {"campeon": campeon, "subcampeon": subcampeon, "3puesto": tercero}
+        return {
+            "campeon":    celda(df, 149),
+            "subcampeon": celda(df, 150),
+            "3puesto":    celda(df, 151),
+            "bota_oro":   celda(df, 153),
+            "balon_oro":  celda(df, 155),
+        }
     except Exception:
-        return {"campeon": "", "subcampeon": "", "3puesto": ""}
+        return {"campeon": "", "subcampeon": "", "3puesto": "", "bota_oro": "", "balon_oro": ""}
 
 
 def cargar_penaltis():
@@ -837,6 +864,7 @@ def main():
 
     maestro = pd.read_excel(RUTA_MAESTRO, sheet_name="Datos")
     penaltis = cargar_penaltis()
+    honor_real = leer_cuadro_honor(RUTA_MAESTRO)
 
     ranking = []
 
@@ -846,9 +874,10 @@ def main():
             continue
 
         jugador = pd.read_excel(archivo, sheet_name="Datos")
+        honor_jugador = leer_cuadro_honor(archivo)
 
         puntos, g, d, e = puntuar(maestro, jugador, penaltis)
-        extras = puntuar_extras(maestro, jugador) if FASE_GRUPOS_TERMINADA else 0
+        extras = puntuar_extras(maestro, jugador, honor_real, honor_jugador) if FASE_GRUPOS_TERMINADA else 0
 
         ranking.append({
             "Participante": unicodedata.normalize("NFC", archivo.stem),
